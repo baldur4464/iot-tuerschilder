@@ -1,2 +1,2 @@
 # iot-tuerschilder
-Darstellen von Raumbuchungen aus einer Kalender
+Darstellen von Raumbuchungen aus einem Kalender
