@@ -5,5 +5,5 @@
 src/main/ressources/.env
 
 #Ignore autogenerates files from Maven
-targetjav
+target
 
