@@ -1,9 +1,0 @@
-#Ignore autogenerates files from Intellij
-.idea
-
-#Ignore secret files
-src/main/ressources/.env
-
-#Ignore autogenerates files from Maven
-target
-
