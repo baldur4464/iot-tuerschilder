@@ -7,6 +7,7 @@ backend/.idea
 #Ignore secret files
 backend/src/main/resources/.env
 backend/sqlite/db/*.db
+broker
 
 #Ignore autogenerates files from Maven
 backend/target
