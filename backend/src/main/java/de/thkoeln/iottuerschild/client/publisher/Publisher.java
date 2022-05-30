@@ -1,32 +1,42 @@
 package de.thkoeln.iottuerschild.client.publisher;
 
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 public class Publisher {
 
-    public static void sendNachricht (String broker, String topic, String content, int qos, String clientId) {
+    private static Publisher instance;
 
-        MemoryPersistence persistence = new MemoryPersistence();
+    public static Publisher getInstance() {
+        if(instance == null) {
+            instance = new Publisher();
+        }
+        return instance;
+    }
+
+    private Publisher() {
+
+    }
+
+    private void configClient (String broker, String clientId) {
+
+    }
+
+    public void sendNachricht (String topic, String content, int qos) {
+
 
         try {
-
-            MqttClient client = new MqttClient(broker, clientId, persistence);
+            MqttClient client = new MqttClient("tcp://127.0.0.1", "test", new MemoryPersistence());
             MqttConnectOptions connOpts = new MqttConnectOptions();
             connOpts.setCleanSession(false);
-            client.connect(connOpts);
-
+            connOpts.setKeepAliveInterval(15);
+            connOpts.setConnectionTimeout(30);
+            client.connect();
             MqttMessage message = new MqttMessage(content.getBytes());
             message.setQos(qos);
             message.setRetained(true);
-
             client.publish(topic, message);
             client.disconnect();
-
-
         } catch (MqttException me) {
             System.out.println("reason "+me.getReasonCode());
             System.out.println("msg "+me.getMessage());
