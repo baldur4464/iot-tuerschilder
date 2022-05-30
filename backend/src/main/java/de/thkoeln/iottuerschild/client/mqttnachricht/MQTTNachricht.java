@@ -69,8 +69,6 @@ public class MQTTNachricht {
         jsonObject.put("uhrzeit", this.uhrzeitAnfang + "-" + this.uhrzeitEnde);
         jsonObject.put("raum", this.raum);
 
-        System.out.println(jsonObject);
-
         return jsonObject;
     }
 
