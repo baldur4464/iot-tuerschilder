@@ -1,53 +1,38 @@
 package de.thkoeln.iottuerschild.client.main;
 
 import de.thkoeln.iottuerschild.client.database.Database;
+import de.thkoeln.iottuerschild.client.menu.Menu;
 import de.thkoeln.iottuerschild.client.mqttnachricht.MQTTNachricht;
 import de.thkoeln.iottuerschild.client.publisher.Publisher;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
-public class Main {
+public class Main extends Thread {
     public static void main (String[] Args){
-
-        int auswahl = 0;
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-
-        Publisher pub = Publisher.getInstance();
 
         Database database = new Database();
         database.connect();
 
+        Menu menu = new Menu();
+        Main main = new Main();
 
-        boolean run = true;
-
-        do {
-            System.out.println("Testprogramm zum Versenden von Nachrichten");
-            System.out.println("[1] Sende eine Testnachricht");
-            System.out.println("[0] Beende das Programm");
-            System.out.print("Eingabe: ");
+        main.start();
+        menu.run();
 
 
+
+
+    }
+
+    public void run() {
+        while(true){
             try {
-                String input = br.readLine();
-                auswahl = Integer.parseInt(input);
-            } catch (Exception e) {
+                System.out.println("Mainthread");
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
-
-            switch (auswahl) {
-                case 1:
-                    MQTTNachricht nachricht = new MQTTNachricht("Test", "Raum/5", "12:00", "13:00", "5");
-                    pub.sendNachricht(nachricht.getTopic(), nachricht.nachrichtToJSON().toString(), 0);
-                    break;
-                case 2:
-                    System.out.println("Programm wird beendet");
-                    run = false;
-                    break;
-                default:
-                    System.out.println("ungültige Eingabe");
-            }
-        } while (run);
+        }
     }
 }
