@@ -7,7 +7,12 @@ import java.util.Date;
 public class MQTTNachricht {
     private String titel;
     private String topic;
+    private String verantwortlicher;
+    private String raum;
     private String uhrzeitAnfang;
+    private String uhrzeitEnde;
+
+
 
     public String getTitel() {
         return titel;
@@ -48,10 +53,6 @@ public class MQTTNachricht {
     public void setRaum(String raum) {
         this.raum = raum;
     }
-
-    private String uhrzeitEnde;
-    private String raum;
-
 
     public MQTTNachricht(String titel, String topic, String uhrzeitAnfang, String uhrzeitEnde, String raum) {
         this.titel = titel;

@@ -4,5 +4,5 @@ static tuerschild_config_t dummy_conf  = {
 	.hostname = "broker_hostname",
 	.port = 1883,
 	
-	.topic = "raum/23"
+	.topic = "raum/5"
 };

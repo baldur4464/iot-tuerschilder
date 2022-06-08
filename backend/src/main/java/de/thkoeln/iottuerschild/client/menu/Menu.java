@@ -35,11 +35,12 @@ public class Menu implements Runnable{
 
             switch (auswahl) {
                 case 1:
-                    MQTTNachricht nachricht = new MQTTNachricht("Test", "Raum/5", "12:00", "13:00", "5");
+                    MQTTNachricht nachricht = new MQTTNachricht("Test", "raum/5", "12:00", "13:00", "5");
                     pub.sendNachricht(nachricht.getTopic(), nachricht.nachrichtToJSON().toString(), 0);
                     break;
-                case 2:
+                case 0:
                     System.out.println("Programm wird beendet");
+                    System.exit(0);
                     run = false;
                     break;
                 default:

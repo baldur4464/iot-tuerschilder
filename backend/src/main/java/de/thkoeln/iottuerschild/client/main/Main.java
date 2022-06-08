@@ -28,7 +28,7 @@ public class Main extends Thread {
     public void run() {
         while(true){
             try {
-                System.out.println("Mainthread");
+                //System.out.println("Mainthread");
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();

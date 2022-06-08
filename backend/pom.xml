@@ -9,20 +9,40 @@
     <version>1.0-SNAPSHOT</version>
 
     <repositories>
-
         <repository>
             <id>Eclipse Paho Repo</id>
             <url>%REPOURL%</url>
         </repository>
-
     </repositories>
 
-    <properties>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <id>my-execution</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>de.thkoeln.iottuerschild.client.main.Main</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
+
+    <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-
     </properties>
+
 
     <dependencies>
 
