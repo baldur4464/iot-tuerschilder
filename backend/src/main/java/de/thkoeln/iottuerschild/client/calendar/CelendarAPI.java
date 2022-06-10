@@ -93,10 +93,11 @@ public class CelendarAPI implements Runnable{
         if (items.isEmpty()) {
             System.out.println("No upcoming events found.");
         } else {
+
+
             System.out.println("Upcoming events");
             for (Event event : items) {
-
-                System.out.println(event.toString());
+                System.out.println(event.toPrettyString());
             }
         }
     }
