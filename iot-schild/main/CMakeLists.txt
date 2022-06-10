@@ -4,5 +4,6 @@ idf_component_register(SRCS "src/tuerschild_app.c"
 					"src/tuerschild_wifi_esp32.c"
 					"src/tuerschild_storage_esp32.c"
 					"src/tuerschild_mqtt_esp32.c"
-					"src/tuerschild_spi_esp32.c"
+					"src/esp32_spi.c"
+					"src/esp32_functions.c"
                     INCLUDE_DIRS "./inc" ".")
