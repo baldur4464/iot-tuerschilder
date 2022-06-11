@@ -87,6 +87,7 @@ public class CelendarAPI implements Runnable{
                 .setTimeMin(now)
                 .setTimeMax(maxDate)
                 .setOrderBy("startTime")
+                .set("location", "Raum 5")
                 .setSingleEvents(true)
                 .execute();
         List<Event> items = events.getItems();
@@ -98,6 +99,7 @@ public class CelendarAPI implements Runnable{
             System.out.println("Upcoming events");
             for (Event event : items) {
                 System.out.println(event.toPrettyString());
+                System.out.println("-----------------------------------------------------------");
             }
         }
     }
