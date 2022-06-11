@@ -34,7 +34,7 @@ public class Database {
             String sql = "";
 
              sql= "CREATE TABLE RAUM " +
-                     "(RAUM_ID INT PRIMARY KEY NOT NULL," +
+                     "(RAUM_ID INTEGER PRIMARY KEY," +
                      "RAUM_NAME TEXT NOT NULL," +
                      "RAUM_TOPIC TEXT NOT NULL)";
 
@@ -109,8 +109,11 @@ public class Database {
         try {
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(sql);
-
+            System.out.println("Vor der Whileschleife");
             while (rs.next()){
+
+                System.out.println(rs.getInt("RAUM_ID"));
+
                 Raum raum = new Raum(
                         rs.getInt("RAUM_ID"),
                         rs.getString("RAUM_NAME"),
@@ -118,11 +121,14 @@ public class Database {
                 raumList.add(raum);
             }
 
+            rs.close();
+            conn.close();
+            return raumList;
+
         } catch(Exception e) {
-
+            e.printStackTrace();
+            return null;
         }
-
-        return null;
     }
 
 }
