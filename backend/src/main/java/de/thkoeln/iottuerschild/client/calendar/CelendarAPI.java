@@ -15,10 +15,16 @@ import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.Events;
+import de.thkoeln.iottuerschild.client.database.Database;
+import de.thkoeln.iottuerschild.client.database.Raum;
+import de.thkoeln.iottuerschild.client.mqttnachricht.Nachricht;
 
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.security.GeneralSecurityException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -67,44 +73,94 @@ public class CelendarAPI implements Runnable{
 
     public static void main(String... args) throws IOException, GeneralSecurityException {
         // Build a new authorized API client service.
-        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-        Calendar service = new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-                .setApplicationName(APPLICATION_NAME)
-                .build();
 
-        // List the next 10 events from the primary calendar.
-        Date nowDate = new Date (System.currentTimeMillis());
+        CelendarAPI api = new CelendarAPI();
 
-        java.util.Calendar cal = java.util.Calendar.getInstance();
-        cal.setTime(nowDate);
-        cal.add(java.util.Calendar.HOUR_OF_DAY, 19);
-        Date maxNow = cal.getTime();
+        api.sendMqttNachricht();
 
-        DateTime now = new DateTime(nowDate);
-        DateTime maxDate = new DateTime(maxNow);
-
-        Events events = service.events().list("9r74t1cf6i83ibqpa443q7flh0@group.calendar.google.com")
-                .setTimeMin(now)
-                .setTimeMax(maxDate)
-                .setOrderBy("startTime")
-                .set("location", "Raum 5")
-                .setSingleEvents(true)
-                .execute();
-        List<Event> items = events.getItems();
-        if (items.isEmpty()) {
-            System.out.println("No upcoming events found.");
-        } else {
-
-
-            System.out.println("Upcoming events");
-            for (Event event : items) {
-                System.out.println(event.toPrettyString());
-                System.out.println("-----------------------------------------------------------");
-            }
-        }
     }
 
+    public List getEvents () {
+        try {
+            final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+            Calendar service = new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+                    .setApplicationName(APPLICATION_NAME)
+                    .build();
 
+            // List the next 10 events from the primary calendar.
+            Date nowDate = new Date(System.currentTimeMillis());
+
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.setTime(nowDate);
+            cal.add(java.util.Calendar.HOUR_OF_DAY, 19);
+            Date maxNow = cal.getTime();
+
+            DateTime now = new DateTime(nowDate);
+            DateTime maxDate = new DateTime(maxNow);
+
+            Events events = service.events().list("9r74t1cf6i83ibqpa443q7flh0@group.calendar.google.com")
+                    .setTimeMin(now)
+                    .setTimeMax(maxDate)
+                    .setOrderBy("startTime")
+                    .set("location", "Raum 5")
+                    .setSingleEvents(true)
+                    .execute();
+            List<Event> items = events.getItems();
+
+            return items;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+
+    }
+
+    public void sendMqttNachricht () {
+
+        Database db = new Database();
+
+        List<Raum> raeume = db.getRaeume();
+        List<Event> events = getEvents();
+        DateTime now = new DateTime(System.currentTimeMillis());
+        SimpleDateFormat df = new SimpleDateFormat("kk:mm");
+
+        List<Nachricht> buchungen = new ArrayList<>();
+
+        for (Event event: events) {
+
+            Nachricht buchung;
+
+            //Hilfsklassen, das sich Datetime nicht formatieren lassen
+            Date date1 = new Date(event.getStart().getDateTime().getValue());
+            Date date2 = new Date(event.getEnd().getDateTime().getValue());
+
+            String start = df.format(date1);
+            String end = df.format(date2);
+            String uhrzeit = start+" - " + end;
+
+            if (event.getStart().getDateTime().getValue() <= now.getValue() && event.getEnd().getDateTime().getValue() >= now.getValue()) {
+                System.out.println(event.getLocation());
+                buchung = new Nachricht(event.getSummary(), uhrzeit, event.getCreator().getEmail(), true, db.getRaumByName(event.getLocation()));
+            } else {
+                System.out.println(event.getLocation());
+                buchung = new Nachricht(event.getSummary(), uhrzeit, "", false, db.getRaumByName(event.getLocation()));
+            }
+            buchungen.add(buchung);
+        }
+
+
+
+        for(Nachricht buchung: buchungen) { ;
+            System.out.println(buchung.getKeyValuePairMitVerantworlichen() + " Raum: " + buchung.getRaum().getRaumName());
+        }
+
+
+        for(Raum raum: raeume) {
+
+        }
+
+
+    }
 
     @Override
     public void run() {

@@ -109,10 +109,8 @@ public class Database {
         try {
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(sql);
-            System.out.println("Vor der Whileschleife");
-            while (rs.next()){
 
-                System.out.println(rs.getInt("RAUM_ID"));
+            while (rs.next()){
 
                 Raum raum = new Raum(
                         rs.getInt("RAUM_ID"),
@@ -124,6 +122,33 @@ public class Database {
             rs.close();
             conn.close();
             return raumList;
+
+        } catch(Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public Raum getRaumByName(String raumName) {
+
+        Connection conn = this.connect();
+        String sql = "SELECT * FROM RAUM WHERE RAUM_NAME = ?";
+
+
+        try {
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            if(rs.next()) {
+                Raum raum = new Raum(
+                        rs.getInt("RAUM_ID"),
+                        rs.getString("RAUM_NAME"),
+                        rs.getString("RAUM_TOPIC"));
+
+                return raum;
+            } else {
+                return null;
+            }
 
         } catch(Exception e) {
             e.printStackTrace();
