@@ -21,7 +21,6 @@ import de.thkoeln.iottuerschild.client.mqttnachricht.Nachricht;
 
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -29,7 +28,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-public class CelendarAPI implements Runnable{
+public class CalendarAPI implements Runnable{
     /** Application name. */
     private static final String APPLICATION_NAME = "Google Calendar API Java Quickstart";
     /** Global instance of the JSON factory. */
@@ -53,7 +52,7 @@ public class CelendarAPI implements Runnable{
      */
     private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
         // Load client secrets.
-        InputStream in = CelendarAPI.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
+        InputStream in = CalendarAPI.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
         if (in == null) {
             throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
         }
@@ -74,7 +73,7 @@ public class CelendarAPI implements Runnable{
     public static void main(String... args) throws IOException, GeneralSecurityException {
         // Build a new authorized API client service.
 
-        CelendarAPI api = new CelendarAPI();
+        CalendarAPI api = new CalendarAPI();
 
         api.sendMqttNachricht();
 
