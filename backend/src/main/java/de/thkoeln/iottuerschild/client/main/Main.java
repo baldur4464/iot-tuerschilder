@@ -12,9 +12,6 @@ public class Main extends Thread {
 
     public static void main (String[] Args){
 
-        Database database = new Database();
-        database.connect();
-
         menu = new Menu();
         main = new Main();
 

@@ -2,11 +2,17 @@ package de.thkoeln.iottuerschild.client.menu;
 
 import de.thkoeln.iottuerschild.client.database.Database;
 import de.thkoeln.iottuerschild.client.database.Raum;
+import de.thkoeln.iottuerschild.client.mqttnachricht.MQTTNachricht;
+import de.thkoeln.iottuerschild.client.mqttnachricht.Nachricht;
+import de.thkoeln.iottuerschild.client.publisher.Publisher;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class Menu implements Runnable{
@@ -23,6 +29,7 @@ public class Menu implements Runnable{
             System.out.println("[1] Neuen Raum erstellen");
             System.out.println("[2] Alle Räume anzeigen");
             System.out.println("[3] Einen Raum löschen");
+            System.out.println("[4] Sende eine Testnachricht [DEBUG]");
             System.out.println("[0] Beende das Programm");
             System.out.print("Eingabe: ");
 
@@ -44,6 +51,9 @@ public class Menu implements Runnable{
                     break;
                 case 3:
                     loescheRaum(br);
+                    break;
+                case 4:
+                    sendeTestNachricht();
                     break;
                 case 0:
                     System.out.println("Programm wird beendet");
@@ -127,5 +137,34 @@ public class Menu implements Runnable{
         }
         db.loescheRaum(raumList.get(eingabeInt-1).getRaumId());
         return;
+    }
+
+    private void sendeTestNachricht () {
+
+        Nachricht aktuellesMeeting = new Nachricht("Aktuelles Testmeeting","12:00 - 13:00", "Patrick Schmidt");
+        Nachricht meeting1 = new Nachricht("Meeting 1", ("13:00 - 14:00"));
+        Nachricht meeting2 = new Nachricht("Meeting 2", ("14:00 - 15:00"));
+        Nachricht meeting3 = new Nachricht("Meeting 3", ("15:00 - 16:00"));
+        Nachricht meeting4 = new Nachricht("Meeting 4", ("16:00 - 17:00"));
+
+        Map<String, String> systeminfo = new HashMap<>();
+        systeminfo.put("datum", "13.06.2022");
+        systeminfo.put("updateUhrzeit", "12:59");
+
+        MQTTNachricht mqttMessage = new MQTTNachricht(
+                new JSONObject(aktuellesMeeting.getKeyValuePairMitVerantworlichen()),
+                new JSONObject(meeting1.getKeyValuePair()),
+                new JSONObject(meeting2.getKeyValuePair()),
+                new JSONObject(meeting3.getKeyValuePair()),
+                new JSONObject(meeting4.getKeyValuePair()),
+                new JSONObject(systeminfo)
+        );
+
+        JSONObject sendendeJson = mqttMessage.buildMqttJson();
+        System.out.println(sendendeJson.toString());
+        Publisher pub = Publisher.getInstance();
+
+        pub.sendNachricht("raum/5", sendendeJson.toString(), 0);
+
     }
 }

@@ -22,6 +22,20 @@ public class Nachricht{
         this.raum = raum;
     }
 
+    public Nachricht(String titel, String uhrzeit) {
+        this.titel = titel;
+        this.uhrzeit = uhrzeit;
+        this.verantwortlicher = "";
+        this.aktuellesMeeting = false;
+        this.raum = null;
+    }
+
+    public Nachricht (String titel, String uhrzeit, String verantwortlicher) {
+        this.titel = titel;
+        this.uhrzeit = uhrzeit;
+        this.verantwortlicher = verantwortlicher;
+    }
+
     public String getTitel() {
         return titel;
     }

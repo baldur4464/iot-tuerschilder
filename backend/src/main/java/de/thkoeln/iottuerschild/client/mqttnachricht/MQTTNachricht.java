@@ -13,15 +13,15 @@ public class MQTTNachricht {
     private JSONObject meeting2;
     private JSONObject meeting3;
     private JSONObject meeting4;
-    private JSONObject systemInfo;
+    private JSONObject systeminfo;
 
-    public MQTTNachricht(JSONObject aktuellesMeeting, JSONObject meeting1, JSONObject meeting2, JSONObject meeting3, JSONObject meeting4, JSONObject systemInfo) {
+    public MQTTNachricht(JSONObject aktuellesMeeting, JSONObject meeting1, JSONObject meeting2, JSONObject meeting3, JSONObject meeting4, JSONObject systeminfo) {
         this.aktuellesMeeting = aktuellesMeeting;
         this.meeting1 = meeting1;
         this.meeting2 = meeting2;
         this.meeting3 = meeting3;
         this.meeting4 = meeting4;
-        this.systemInfo = systemInfo;
+        this.systeminfo = systeminfo;
     }
 
     public JSONObject getAktuellesMeeting() {
@@ -65,12 +65,23 @@ public class MQTTNachricht {
     }
 
     public JSONObject getSystemInfo() {
-        return systemInfo;
+        return systeminfo;
     }
 
     public void setSystemInfo(JSONObject systemInfo) {
-        this.systemInfo = systemInfo;
+        this.systeminfo = systemInfo;
     }
 
+    public JSONObject buildMqttJson () {
+        JSONObject object = new JSONObject();
+        object.put("aktuellesMeeting", this.aktuellesMeeting);
+        object.put("meeting1", this.meeting1);
+        object.put("meeting2", this.meeting2);
+        object.put("meeting3", this.meeting3);
+        object.put("meeting4", this.meeting4);
+        object.put("systeminfo", this.systeminfo);
+
+        return object;
+    }
 
 }
