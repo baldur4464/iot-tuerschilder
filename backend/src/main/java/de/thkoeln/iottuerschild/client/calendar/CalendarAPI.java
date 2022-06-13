@@ -17,16 +17,17 @@ import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.Events;
 import de.thkoeln.iottuerschild.client.database.Database;
 import de.thkoeln.iottuerschild.client.database.Raum;
+import de.thkoeln.iottuerschild.client.mqttnachricht.MQTTNachricht;
 import de.thkoeln.iottuerschild.client.mqttnachricht.Nachricht;
+import de.thkoeln.iottuerschild.client.publisher.Publisher;
+import org.checkerframework.checker.units.qual.A;
+import org.json.JSONObject;
 
 
 import java.io.*;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class CalendarAPI implements Runnable{
     /** Application name. */
@@ -74,9 +75,8 @@ public class CalendarAPI implements Runnable{
         // Build a new authorized API client service.
 
         CalendarAPI api = new CalendarAPI();
-
         api.sendMqttNachricht();
-
+        System.exit(1);
     }
 
     public List getEvents () {
@@ -101,7 +101,6 @@ public class CalendarAPI implements Runnable{
                     .setTimeMin(now)
                     .setTimeMax(maxDate)
                     .setOrderBy("startTime")
-                    .set("location", "Raum 5")
                     .setSingleEvents(true)
                     .execute();
             List<Event> items = events.getItems();
@@ -120,12 +119,13 @@ public class CalendarAPI implements Runnable{
 
         List<Raum> raeume = db.getRaeume();
         List<Event> events = getEvents();
+
         DateTime now = new DateTime(System.currentTimeMillis());
-        SimpleDateFormat df = new SimpleDateFormat("kk:mm");
+        SimpleDateFormat df = new SimpleDateFormat("HH:mm");
 
         List<Nachricht> buchungen = new ArrayList<>();
 
-        for (Event event: events) {
+        for (Event event : events) {
 
             Nachricht buchung;
 
@@ -135,34 +135,265 @@ public class CalendarAPI implements Runnable{
 
             String start = df.format(date1);
             String end = df.format(date2);
-            String uhrzeit = start+" - " + end;
+            String uhrzeit = start + "-" + end;
 
-            if (event.getStart().getDateTime().getValue() <= now.getValue() && event.getEnd().getDateTime().getValue() >= now.getValue()) {
-                System.out.println(event.getLocation());
-                buchung = new Nachricht(event.getSummary(), uhrzeit, event.getCreator().getEmail(), true, db.getRaumByName(event.getLocation()));
-            } else {
-                System.out.println(event.getLocation());
-                buchung = new Nachricht(event.getSummary(), uhrzeit, "", false, db.getRaumByName(event.getLocation()));
+            if(db.getRaumByName(event.getLocation()) != null) {
+                if (event.getStart().getDateTime().getValue() <= now.getValue() && event.getEnd().getDateTime().getValue() >= now.getValue()) {
+                    buchung = new Nachricht(event.getSummary(), uhrzeit, event.getCreator().getEmail(), true, db.getRaumByName(event.getLocation()));
+                } else {
+                    buchung = new Nachricht(event.getSummary(), uhrzeit, "", false, db.getRaumByName(event.getLocation()));
+                }
+                buchungen.add(buchung);
             }
-            buchungen.add(buchung);
         }
 
+        for (Raum raum: raeume) {
+            List<Nachricht> sortierteListe = new ArrayList<>();
 
+            for(Nachricht buchung: buchungen) {
 
-        for(Nachricht buchung: buchungen) { ;
-            System.out.println(buchung.getKeyValuePairMitVerantworlichen() + " Raum: " + buchung.getRaum().getRaumName());
+                if (raum.getRaumName().contains(buchung.getRaum().getRaumName())) {
+                    sortierteListe.add(buchung);
+                }
+            }
+
+            switch (sortierteListe.size()) {
+                case 0:
+                    erstelleNachrichtohneEvent(raum);
+                    break;
+                case 1:
+                    erstelleNachrichteinEvent(raum, sortierteListe);
+                    break;
+                case 2:
+                    erstelleNachrichtzweiEvent(raum,  sortierteListe);
+                    break;
+                case 3:
+                    erstelleNachrichtdreiEvent(raum,  sortierteListe);
+                    break;
+                case 4:
+                    erstelleNachrichtvierEvent(raum,  sortierteListe);
+                    break;
+                default:
+                    erstelleNachrichtmehrEvent(raum, buchungen);
+                    break;
+            }
+        }
+        return;
+    }
+
+    private void erstelleNachrichtohneEvent(Raum raum) {
+
+        Nachricht aktuellesMeeting = new Nachricht("Frei","", "");
+        Nachricht meeting = new Nachricht("", (""));
+
+        MQTTNachricht mqttMessage = new MQTTNachricht(
+                new JSONObject(aktuellesMeeting.getKeyValuePairMitVerantworlichen()),
+                new JSONObject(meeting.getKeyValuePair()),
+                new JSONObject(meeting.getKeyValuePair()),
+                new JSONObject(meeting.getKeyValuePair()),
+                new JSONObject(meeting.getKeyValuePair()),
+                new JSONObject(getSystemInfo()));
+
+        Publisher pub = Publisher.getInstance();
+        pub.sendNachricht(raum.getRaumTopic(), mqttMessage.buildMqttJson().toString(), 0);
+    }
+
+    private void erstelleNachrichteinEvent(Raum raum, List<Nachricht> buchungen) {
+
+        JSONObject aktuellesMeeting;
+        JSONObject meeting1;
+
+        if(buchungen.get(0).isAktuellesMeeting()) {
+            aktuellesMeeting = new JSONObject(buchungen.get(0).getKeyValuePairMitVerantworlichen());
+            Nachricht meeting1Nachricht = new Nachricht("", (""));
+            meeting1 = new JSONObject(meeting1Nachricht.getKeyValuePair());
+        } else {
+            Nachricht aktuellesMeetingNachricht = new Nachricht("Frei", "", "");
+            aktuellesMeeting = new JSONObject(aktuellesMeetingNachricht.getKeyValuePairMitVerantworlichen());
+            meeting1 = new JSONObject(buchungen.get(0).getKeyValuePair());
         }
 
+        Nachricht meeting = new Nachricht("", (""));
 
-        for(Raum raum: raeume) {
+        MQTTNachricht mqttMessage = new MQTTNachricht(
+                aktuellesMeeting,
+                meeting1,
+                new JSONObject(meeting.getKeyValuePair()),
+                new JSONObject(meeting.getKeyValuePair()),
+                new JSONObject(meeting.getKeyValuePair()),
+                new JSONObject(getSystemInfo())
+        );
 
-        }
-
+        Publisher pub = Publisher.getInstance();
+        pub.sendNachricht(raum.getRaumTopic(), mqttMessage.buildMqttJson().toString(), 0);
 
     }
 
+    private void erstelleNachrichtzweiEvent(Raum raum, List<Nachricht> buchungen) {
+        JSONObject aktuellesMeeting;
+        JSONObject meeting1;
+        JSONObject meeting2;
+
+        if(buchungen.get(0).isAktuellesMeeting()) {
+            aktuellesMeeting = new JSONObject(buchungen.get(0).getKeyValuePairMitVerantworlichen());
+            meeting1 = new JSONObject(buchungen.get(1).getKeyValuePair());
+
+            Nachricht meeting2Nachricht = new Nachricht("", (""));
+            meeting2 = new JSONObject(meeting2Nachricht.getKeyValuePair());
+        } else {
+            Nachricht aktuellesMeetingNachricht = new Nachricht("Frei", "", "");
+            aktuellesMeeting = new JSONObject(aktuellesMeetingNachricht.getKeyValuePairMitVerantworlichen());
+            meeting1 = new JSONObject(buchungen.get(0).getKeyValuePair());
+            meeting2 = new JSONObject(buchungen.get(1).getKeyValuePair());
+        }
+
+        Nachricht meeting = new Nachricht("", (""));
+
+        MQTTNachricht mqttMessage = new MQTTNachricht(
+                aktuellesMeeting,
+                meeting1,
+                meeting2,
+                new JSONObject(meeting.getKeyValuePair()),
+                new JSONObject(meeting.getKeyValuePair()),
+                new JSONObject(getSystemInfo())
+        );
+
+        Publisher pub = Publisher.getInstance();
+        pub.sendNachricht(raum.getRaumTopic(), mqttMessage.buildMqttJson().toString(), 0);
+    }
+
+    private void erstelleNachrichtdreiEvent(Raum raum, List<Nachricht> buchungen) {
+        JSONObject aktuellesMeeting;
+        JSONObject meeting1;
+        JSONObject meeting2;
+        JSONObject meeting3;
+
+        if(buchungen.get(0).isAktuellesMeeting()) {
+            aktuellesMeeting = new JSONObject(buchungen.get(0).getKeyValuePairMitVerantworlichen());
+            meeting1 = new JSONObject(buchungen.get(1).getKeyValuePair());
+            meeting2 = new JSONObject(buchungen.get(2).getKeyValuePair());
+
+            Nachricht meeting3Nachricht = new Nachricht("", (""));
+            meeting3 = new JSONObject(meeting3Nachricht.getKeyValuePair());
+        } else {
+            Nachricht aktuellesMeetingNachricht = new Nachricht("Frei", "", "");
+            aktuellesMeeting = new JSONObject(aktuellesMeetingNachricht.getKeyValuePairMitVerantworlichen());
+            meeting1 = new JSONObject(buchungen.get(0).getKeyValuePair());
+            meeting2 = new JSONObject(buchungen.get(1).getKeyValuePair());
+            meeting3 = new JSONObject(buchungen.get(2).getKeyValuePair());
+        }
+
+        Nachricht meeting = new Nachricht("", (""));
+
+        MQTTNachricht mqttMessage = new MQTTNachricht(
+                aktuellesMeeting,
+                meeting1,
+                meeting2,
+                meeting3,
+                new JSONObject(meeting.getKeyValuePair()),
+                new JSONObject(getSystemInfo())
+        );
+
+        Publisher pub = Publisher.getInstance();
+        pub.sendNachricht(raum.getRaumTopic(), mqttMessage.buildMqttJson().toString(), 0);
+    }
+
+    private void erstelleNachrichtvierEvent(Raum raum, List<Nachricht> buchungen) {
+        JSONObject aktuellesMeeting;
+        JSONObject meeting1;
+        JSONObject meeting2;
+        JSONObject meeting3;
+        JSONObject meeting4;
+
+        if(buchungen.get(0).isAktuellesMeeting()) {
+            aktuellesMeeting = new JSONObject(buchungen.get(0).getKeyValuePairMitVerantworlichen());
+            meeting1 = new JSONObject(buchungen.get(1).getKeyValuePair());
+            meeting2 = new JSONObject(buchungen.get(2).getKeyValuePair());
+            meeting3 = new JSONObject(buchungen.get(3).getKeyValuePair());
+
+            Nachricht meeting4Nachricht = new Nachricht("", (""));
+            meeting4 = new JSONObject(meeting4Nachricht.getKeyValuePair());
+        } else {
+            Nachricht aktuellesMeetingNachricht = new Nachricht("Frei", "", "");
+            aktuellesMeeting = new JSONObject(aktuellesMeetingNachricht.getKeyValuePairMitVerantworlichen());
+            meeting1 = new JSONObject(buchungen.get(0).getKeyValuePair());
+            meeting2 = new JSONObject(buchungen.get(1).getKeyValuePair());
+            meeting3 = new JSONObject(buchungen.get(2).getKeyValuePair());
+            meeting4 = new JSONObject(buchungen.get(3).getKeyValuePair());
+
+        }
+
+        MQTTNachricht mqttMessage = new MQTTNachricht(
+                aktuellesMeeting,
+                meeting1,
+                meeting2,
+                meeting3,
+                meeting4,
+                new JSONObject(getSystemInfo())
+        );
+
+        Publisher pub = Publisher.getInstance();
+        pub.sendNachricht(raum.getRaumTopic(), mqttMessage.buildMqttJson().toString(), 0);
+    }
+
+    private void erstelleNachrichtmehrEvent(Raum raum, List<Nachricht> buchungen) {
+        JSONObject aktuellesMeeting;
+        JSONObject meeting1;
+        JSONObject meeting2;
+        JSONObject meeting3;
+        JSONObject meeting4;
+
+        if(buchungen.get(0).isAktuellesMeeting()) {
+            aktuellesMeeting = new JSONObject(buchungen.get(0).getKeyValuePairMitVerantworlichen());
+            meeting1 = new JSONObject(buchungen.get(1).getKeyValuePair());
+            meeting2 = new JSONObject(buchungen.get(2).getKeyValuePair());
+            meeting3 = new JSONObject(buchungen.get(3).getKeyValuePair());
+            meeting4 = new JSONObject(buchungen.get(4).getKeyValuePair());
+        } else {
+            Nachricht aktuellesMeetingNachricht = new Nachricht("Frei", "", "");
+            aktuellesMeeting = new JSONObject(aktuellesMeetingNachricht.getKeyValuePairMitVerantworlichen());
+            meeting1 = new JSONObject(buchungen.get(0).getKeyValuePair());
+            meeting2 = new JSONObject(buchungen.get(1).getKeyValuePair());
+            meeting3 = new JSONObject(buchungen.get(2).getKeyValuePair());
+            meeting4 = new JSONObject(buchungen.get(3).getKeyValuePair());
+
+        }
+
+        MQTTNachricht mqttMessage = new MQTTNachricht(
+                aktuellesMeeting,
+                meeting1,
+                meeting2,
+                meeting3,
+                meeting4,
+                new JSONObject(getSystemInfo())
+        );
+
+        Publisher pub = Publisher.getInstance();
+        pub.sendNachricht(raum.getRaumTopic(), mqttMessage.buildMqttJson().toString(), 0);
+    }
+
+    private Map getSystemInfo () {
+        Date now = new Date(System.currentTimeMillis());
+        SimpleDateFormat df1 = new SimpleDateFormat("dd.MM.yy");
+        SimpleDateFormat df2 = new SimpleDateFormat("HH:mm");
+
+        Map<String, String> systeminfo = new HashMap<>();
+        systeminfo.put("datum", df1.format(now));
+        systeminfo.put("updateUhrzeit", df2.format(now));
+
+        return systeminfo;
+    }
+
+
     @Override
     public void run() {
-
+        while(true) {
+            try {
+                sendMqttNachricht();
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
