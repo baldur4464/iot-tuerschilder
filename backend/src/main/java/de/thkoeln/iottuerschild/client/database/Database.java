@@ -31,14 +31,16 @@ public class Database {
         try {
             Connection conn = DriverManager.getConnection(url);
             Statement stmt = conn.createStatement();
-            String sql = "";
 
-             sql= "CREATE TABLE RAUM " +
+
+            String sql= "CREATE TABLE RAUM " +
                      "(RAUM_ID INTEGER PRIMARY KEY," +
                      "RAUM_NAME TEXT NOT NULL," +
                      "RAUM_TOPIC TEXT NOT NULL)";
 
             stmt.executeUpdate(sql);
+            stmt.close();
+            conn.close();
 
             /*
             sql = "CREATE TABLE BUCHUNG " +
@@ -130,25 +132,26 @@ public class Database {
     }
 
     public Raum getRaumByName(String raumName) {
-
+        Raum raum = null;
         Connection conn = this.connect();
         String sql = "SELECT * FROM RAUM WHERE RAUM_NAME = ?";
 
 
         try {
             PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, raumName);
             ResultSet rs = pstmt.executeQuery();
 
             if(rs.next()) {
-                Raum raum = new Raum(
+                raum = new Raum(
                         rs.getInt("RAUM_ID"),
                         rs.getString("RAUM_NAME"),
                         rs.getString("RAUM_TOPIC"));
 
-                return raum;
-            } else {
-                return null;
             }
+
+            conn.close();
+            return raum;
 
         } catch(Exception e) {
             e.printStackTrace();
