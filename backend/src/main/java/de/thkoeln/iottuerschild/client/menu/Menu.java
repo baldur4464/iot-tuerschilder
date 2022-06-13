@@ -1,10 +1,19 @@
 package de.thkoeln.iottuerschild.client.menu;
 
+import de.thkoeln.iottuerschild.client.database.Database;
+import de.thkoeln.iottuerschild.client.database.Raum;
 import de.thkoeln.iottuerschild.client.mqttnachricht.MQTTNachricht;
+import de.thkoeln.iottuerschild.client.mqttnachricht.Nachricht;
 import de.thkoeln.iottuerschild.client.publisher.Publisher;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class Menu implements Runnable{
     @Override
@@ -14,13 +23,13 @@ public class Menu implements Runnable{
         int auswahl = 0;
 
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        Publisher pub = Publisher.getInstance();
-
-
 
         do {
             System.out.println("Testprogramm zum Versenden von Nachrichten");
-            System.out.println("[1] Sende eine Testnachricht");
+            System.out.println("[1] Neuen Raum erstellen");
+            System.out.println("[2] Alle Räume anzeigen");
+            System.out.println("[3] Einen Raum löschen");
+            System.out.println("[4] Sende eine Testnachricht [DEBUG]");
             System.out.println("[0] Beende das Programm");
             System.out.print("Eingabe: ");
 
@@ -35,8 +44,16 @@ public class Menu implements Runnable{
 
             switch (auswahl) {
                 case 1:
-                    MQTTNachricht nachricht = new MQTTNachricht("Test", "raum/5", "12:00", "13:00", "5");
-                    pub.sendNachricht(nachricht.getTopic(), nachricht.nachrichtToJSON().toString(), 0);
+                    erstelleRaum (br);
+                    break;
+                case 2:
+                    zeigeRaeume();
+                    break;
+                case 3:
+                    loescheRaum(br);
+                    break;
+                case 4:
+                    sendeTestNachricht();
                     break;
                 case 0:
                     System.out.println("Programm wird beendet");
@@ -47,5 +64,107 @@ public class Menu implements Runnable{
                     System.out.println("ungültige Eingabe");
             }
         } while (run);
+    }
+
+    private void erstelleRaum(BufferedReader br) {
+        String raumName;
+        String raumTopic;
+
+        System.out.println("Neuer Raum erstellen...");
+
+        System.out.print("Geben Sie einen Raumnamen ein: ");
+        try {
+            raumName = br.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        System.out.print("Geben Sie einen Topic ein auf dem der Raum publiziert: ");
+        try {
+            raumTopic = br.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        Database db = new Database();
+        db.erstelleRaum(raumName, raumTopic);
+    }
+
+    private void zeigeRaeume() {
+        Database db = new Database();
+        ArrayList<Raum> raumList = db.getRaeume();
+
+        for(Raum raum: raumList) {
+            System.out.println(
+                    "ID: "+ raum.getRaumId()+"\t\t"+
+                    "Raum Name: "+raum.getRaumName()+"\t\t"+
+                    "Raum Topic:"+raum.getRaumTopic());
+        }
+    }
+
+    private void loescheRaum(BufferedReader br) {
+        Database db = new Database();
+        ArrayList<Raum> raumList = db.getRaeume();
+        int zaehler = 1;
+        int eingabeInt = 0;
+
+        System.out.println("Welchen Raum wollen Sie löschen? ");
+        System.out.println("[0] Zurück zum Hauptmenü");
+
+        for(Raum raum: raumList) {
+            System.out.println("["+zaehler+"] " +"Raumname: " + raum.getRaumName());
+            zaehler++;
+        }
+
+        System.out.print("Eingabe: ");
+        try {
+            String eingabe = br.readLine();
+            eingabeInt = Integer.parseInt(eingabe);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+
+        if(eingabeInt == 0) {
+            return;
+        }
+
+        if(eingabeInt > raumList.size()){
+            System.out.println("Ungültige Eingabe. Versuchen Sie es erneut");
+            return;
+        }
+        db.loescheRaum(raumList.get(eingabeInt-1).getRaumId());
+        return;
+    }
+
+    private void sendeTestNachricht () {
+
+        Nachricht aktuellesMeeting = new Nachricht("Aktuelles Testmeeting","12:00 - 13:00", "Patrick Schmidt");
+        Nachricht meeting1 = new Nachricht("Meeting 1", ("13:00 - 14:00"));
+        Nachricht meeting2 = new Nachricht("Meeting 2", ("14:00 - 15:00"));
+        Nachricht meeting3 = new Nachricht("Meeting 3", ("15:00 - 16:00"));
+        Nachricht meeting4 = new Nachricht("Meeting 4", ("16:00 - 17:00"));
+
+        Map<String, String> systeminfo = new HashMap<>();
+        systeminfo.put("datum", "13.06.2022");
+        systeminfo.put("updateUhrzeit", "12:59");
+
+        MQTTNachricht mqttMessage = new MQTTNachricht(
+                new JSONObject(aktuellesMeeting.getKeyValuePairMitVerantworlichen()),
+                new JSONObject(meeting1.getKeyValuePair()),
+                new JSONObject(meeting2.getKeyValuePair()),
+                new JSONObject(meeting3.getKeyValuePair()),
+                new JSONObject(meeting4.getKeyValuePair()),
+                new JSONObject(systeminfo)
+        );
+
+        JSONObject sendendeJson = mqttMessage.buildMqttJson();
+        System.out.println(sendendeJson.toString());
+        Publisher pub = Publisher.getInstance();
+
+        pub.sendNachricht("raum/5", sendendeJson.toString(), 0);
+
     }
 }

@@ -2,75 +2,86 @@ package de.thkoeln.iottuerschild.client.mqttnachricht;
 
 import org.json.JSONObject;
 
-import java.util.Date;
+
 
 public class MQTTNachricht {
-    private String titel;
+
     private String topic;
-    private String verantwortlicher;
-    private String raum;
-    private String uhrzeitAnfang;
-    private String uhrzeitEnde;
 
+    private JSONObject aktuellesMeeting;
+    private JSONObject meeting1;
+    private JSONObject meeting2;
+    private JSONObject meeting3;
+    private JSONObject meeting4;
+    private JSONObject systeminfo;
 
-
-    public String getTitel() {
-        return titel;
+    public MQTTNachricht(JSONObject aktuellesMeeting, JSONObject meeting1, JSONObject meeting2, JSONObject meeting3, JSONObject meeting4, JSONObject systeminfo) {
+        this.aktuellesMeeting = aktuellesMeeting;
+        this.meeting1 = meeting1;
+        this.meeting2 = meeting2;
+        this.meeting3 = meeting3;
+        this.meeting4 = meeting4;
+        this.systeminfo = systeminfo;
     }
 
-    public void setTitel(String titel) {
-        this.titel = titel;
+    public JSONObject getAktuellesMeeting() {
+        return aktuellesMeeting;
     }
 
-    public String getTopic() {
-        return topic;
+    public void setAktuellesMeeting(JSONObject aktuellesMeeting) {
+        this.aktuellesMeeting = aktuellesMeeting;
     }
 
-    public void setTopic(String topic) {
-        this.topic = topic;
+    public JSONObject getMeeting1() {
+        return meeting1;
     }
 
-    public String getUhrzeitAnfang() {
-        return uhrzeitAnfang;
+    public void setMeeting1(JSONObject meeting1) {
+        this.meeting1 = meeting1;
     }
 
-    public void setUhrzeitAnfang(String uhrzeitAnfang) {
-        this.uhrzeitAnfang = uhrzeitAnfang;
+    public JSONObject getMeeting2() {
+        return meeting2;
     }
 
-    public String getUhrzeitEnde() {
-        return uhrzeitEnde;
+    public void setMeeting2(JSONObject meeting2) {
+        this.meeting2 = meeting2;
     }
 
-    public void setUhrzeitEnde(String uhrzeitEnde) {
-        this.uhrzeitEnde = uhrzeitEnde;
+    public JSONObject getMeeting3() {
+        return meeting3;
     }
 
-    public String getRaum() {
-        return raum;
+    public void setMeeting3(JSONObject meeting3) {
+        this.meeting3 = meeting3;
     }
 
-    public void setRaum(String raum) {
-        this.raum = raum;
+    public JSONObject getMeeting4() {
+        return meeting4;
     }
 
-    public MQTTNachricht(String titel, String topic, String uhrzeitAnfang, String uhrzeitEnde, String raum) {
-        this.titel = titel;
-        this.topic = topic;
-        this.uhrzeitAnfang = uhrzeitAnfang;
-        this.uhrzeitEnde = uhrzeitEnde;
-        this.raum = raum;
+    public void setMeeting4(JSONObject meeting4) {
+        this.meeting4 = meeting4;
     }
 
-    public JSONObject nachrichtToJSON () {
+    public JSONObject getSystemInfo() {
+        return systeminfo;
+    }
 
-        JSONObject jsonObject = new JSONObject();
+    public void setSystemInfo(JSONObject systemInfo) {
+        this.systeminfo = systemInfo;
+    }
 
-        jsonObject.put("titel", this.titel);
-        jsonObject.put("uhrzeit", this.uhrzeitAnfang + "-" + this.uhrzeitEnde);
-        jsonObject.put("raum", this.raum);
+    public JSONObject buildMqttJson () {
+        JSONObject object = new JSONObject();
+        object.put("aktuellesMeeting", this.aktuellesMeeting);
+        object.put("meeting1", this.meeting1);
+        object.put("meeting2", this.meeting2);
+        object.put("meeting3", this.meeting3);
+        object.put("meeting4", this.meeting4);
+        object.put("systeminfo", this.systeminfo);
 
-        return jsonObject;
+        return object;
     }
 
 }

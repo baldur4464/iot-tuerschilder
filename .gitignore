@@ -3,11 +3,16 @@
 
 #Ignore autogenerates files from Intellij
 backend/.idea
+backend/*.iml
 
 #Ignore secret files
 backend/.env
 backend/sqlite/db/*.db
 broker
+backend/tokens
+backend/src/main/resources/credentials.json
+backend/credentials.json
+
 
 #Ignore autogenerates files from Maven
 backend/target
