@@ -33,7 +33,12 @@ int early_init()
 int config_requested()
 {
 	//TODO implement
+	/*static int request = 1;
 	TUERSCHILD_LOGW(tag, "using dummy function 'config_requested'");
+	if(request) {
+		request = 0;
+		return 1;
+	}*/
 	return 0;
 }
 
@@ -46,9 +51,19 @@ int valid_config()
 
 void yield()
 {
+	#warning dummy yield
 	//TODO implement
-	TUERSCHILD_LOGW(tag, "dummy yield function");
+	//TUERSCHILD_LOGW(tag, "dummy yield function");
 	vTaskDelay(100/portTICK_PERIOD_MS);
+}
+
+
+void tuerschild_delay_ms(int x)
+{
+	#warning dummy delay;
+	//TODO implement
+	//TUERSCHILD_LOGW(tag, "dummy delay function");
+	vTaskDelay(x/portTICK_PERIOD_MS);
 }
 
 #warning no mutex, datarace
@@ -63,9 +78,13 @@ int display()
 
 void enter_sleep()
 {
+	#warning enter_sleep to implement
 	//TODO implement
-	TUERSCHILD_LOGW(tag, "dummy sleep function");
-	esp_deep_sleep(20*1000000);
+	
+	//TUERSCHILD_LOGW(tag, "waiting");
+	//vTaskDelay(20000/portTICK_PERIOD_MS);
+	TUERSCHILD_LOGW(tag, "sleeping");
+	esp_deep_sleep(10*1000000);
 }
 
 int process()
