@@ -8,6 +8,8 @@ backend/.idea
 backend/.env
 backend/sqlite/db/*.db
 broker
+backend/tokens/*
+backend/src/main/resources/*
 
 #Ignore autogenerates files from Maven
 backend/target

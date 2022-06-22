@@ -1,8 +1,5 @@
 build/
 main/dummy_conf.inc
 components/
-../.idea/
-../backend/src/main/resources/
-../backend/tokens/
 partition_table/
 sdkconfig.old
