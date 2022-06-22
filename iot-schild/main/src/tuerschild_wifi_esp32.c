@@ -189,14 +189,17 @@ int bring_wifi_up(tuerschild_wifi_mode_t mode, tuerschild_config_t* conf)
 
 	wifi_config_t wifi_cfg_ap = {
         .ap = {
-            .ssid = "EXAMPLE_ESP_WIFI_SSID",
-            .ssid_len = strlen("EXAMPLE_ESP_WIFI_SSID"),
-            .channel = 0,
-            .password = "012354679",
-            .max_connection = 15,
+            //.ssid = conf->ap_ssid,
+            .ssid_len = strlen(conf->ap_ssid),
+            .channel = conf->ap_channel,
+            //.password = conf->ap_password,
+            .max_connection = 1,
             .authmode = WIFI_AUTH_WPA_WPA2_PSK
-        },
+        }
 	};
+
+	strcpy((char*)wifi_cfg_ap.ap.ssid, conf->ap_ssid);
+	strcpy((char*)wifi_cfg_ap.ap.password, conf->ap_password);
 	
 
 	esp_err_t error = ESP_OK;

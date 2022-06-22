@@ -5,4 +5,9 @@ static tuerschild_config_t dummy_conf  = {
 	.port = 1883,
 	
 	.topic = "raum/5"
+
+
+	.ap_ssid = "Tueschild Einrichtung",
+	.ap_password = "01234567",
+	.ap_channel = 6
 };

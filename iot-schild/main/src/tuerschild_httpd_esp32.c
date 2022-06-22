@@ -21,7 +21,8 @@ typedef struct post_context
     int put;
 } post_context_t;
 
-EventGroupHandle_t httpd_events = NULL;
+static EventGroupHandle_t httpd_events = NULL;
+
 
 
 
@@ -32,26 +33,50 @@ static httpd_config_t server_conf = HTTPD_DEFAULT_CONFIG();
 static esp_err_t get_handler(httpd_req_t* request);
 static esp_err_t post_handler(httpd_req_t* request);
 
-int parse_url_encoded(char* str);
+static int parse_url_encoded(char* str);
+static char* get_string_in_post(char* post, const char* key, int* len);
 
-static char main_page[] = 
+
+static const char page_before_ssid[] = 
         "<html><body>"
             "<form action =\"conf\" method = \"post\">"
             
                 "<label for=\"fSSID\">SSID:</label><br>"
-                "<input type=\"text\" id=\"fSSID\" name=\"SSID\"><br>"
+                "<input type=\"text\" id=\"fSSID\" name=\"SSID\" value=\"";
+static const char page_before_topic[] ="\"><br>"
                 
                 "<label for=\"lpass\">pass:</label><br>"
                 "<input type=\"password\" id=\"lpass\" name=\"lpass\"><br>"
+
+                "<label for=\"lpass_conf\">confirm pass:</label><br>"
+                "<input type=\"password\" id=\"lpass_confirm\" name=\"lpass_confirm\"><br>"
                 
                 "<label for=\"ltopic\">topic:</label><br>"
-                "<input type=\"text\" id=\"ltopic\" name=\"ltopic\"><br>"
+                "<input type=\"text\" id=\"ltopic\" name=\"ltopic\" value = \"";
+static const char page_before_port[] = "\"><br>"
                 
                 "<label for=\"lport\">port:</label><br>"
-                "<input type=\"text\" id=\"lport\" name=\"lport\" inputmode=\"numeric\"><br>"
+                "<input type=\"text\" id=\"lport\" name=\"lport\" inputmode=\"numeric\" value=\"";
+static const char page_before_broker[] = "\"><br>"
                 
                 "<label for=\"lbroker\">broker:</label><br>"
-                "<input type=\"text\" id=\"lbroker\" name=\"lbroker\"><br>"
+                "<input type=\"text\" id=\"lbroker\" name=\"lbroker\" value=\"";
+static const char page_before_ap_ssid[] = "\"><br>"
+                
+                "<label for=\"lap_ssid\">ap_ssid:</label><br>"
+                "<input type=\"text\" id=\"lap_ssid\" name=\"lap_ssid\" value=\"";
+
+static const char page_before_ap_chan[] = "\"><br>"
+
+                "<label for=\"lap_pass\">ap_pass:</label><br>"
+                "<input type=\"password\" id=\"lap_pass\" name=\"lap_pass\"><br>"
+
+                "<label for=\"lap_pass_conf\">confirm ap_pass:</label><br>"
+                "<input type=\"password\" id=\"lap_pass_confirm\" name=\"lap_pass_confirm\"><br>"
+                
+                "<label for=\"lap_chan\">ap_chan:</label><br>"
+                "<input type=\"text\" id=\"lap_chan\" name=\"lap_chan\" inputmode=\"numeric\"value=\"";
+static const char page_end[] = "\"><br>"
 
                 "<button type=\"submit\">Einstellungen Speichern</button>"
                 
@@ -59,24 +84,61 @@ static char main_page[] =
             "</html></body>";
 
 
-static const httpd_uri_t conf_get = {
+static httpd_uri_t conf_get = {
     .uri       = "/conf",
     .method    = HTTP_GET,
     .handler   = get_handler,
-    .user_ctx  = main_page
+    
 };
 
 static httpd_uri_t conf_post = {
     .uri       = "/conf",
     .method    = HTTP_POST,
     .handler   = post_handler
+    
 };
-
+char buf[100];
 static esp_err_t get_handler(httpd_req_t* request)
 {   
-    TUERSCHILD_LOGI(tag, "server got \"GET\" request");
-    httpd_resp_send(request, request->user_ctx, HTTPD_RESP_USE_STRLEN);
     
+    tuerschild_config_t* old_conf = request->user_ctx;
+    TUERSCHILD_LOGI(tag, "server got \"GET\" request");
+    //httpd_resp_send(request, request->user_ctx, HTTPD_RESP_USE_STRLEN);
+    httpd_resp_sendstr_chunk(request, page_before_ssid);
+    if(old_conf->ssid) {
+        httpd_resp_sendstr_chunk(request, old_conf->ssid);
+    }
+
+    httpd_resp_sendstr_chunk(request, page_before_topic);
+    if(old_conf->topic) {
+        httpd_resp_sendstr_chunk(request, old_conf->topic);
+    }
+
+    httpd_resp_sendstr_chunk(request, page_before_port);
+    if(old_conf->port) {
+        snprintf(buf, 99, "%d", old_conf->port);
+        httpd_resp_sendstr_chunk(request, buf);
+    }
+
+    httpd_resp_sendstr_chunk(request, page_before_broker);
+    if(old_conf->broker) {
+        httpd_resp_sendstr_chunk(request, old_conf->broker);
+    }
+
+    httpd_resp_sendstr_chunk(request, page_before_ap_ssid);
+    if(old_conf->ap_ssid) {
+        httpd_resp_sendstr_chunk(request, old_conf->ap_ssid);
+    }
+
+    httpd_resp_sendstr_chunk(request, page_before_ap_chan);
+    if(old_conf->port) {
+        snprintf(buf, 99, "%d", old_conf->ap_channel);
+        httpd_resp_sendstr_chunk(request, buf);
+    }
+
+    httpd_resp_sendstr_chunk(request, page_end);
+    
+    httpd_resp_send_chunk(request, NULL, 0);
     
     
     return ESP_OK;
@@ -113,72 +175,100 @@ static esp_err_t post_handler(httpd_req_t* request)
         ctx->content[ctx->put++] = 0;
         TUERSCHILD_LOGI(tag, "%.*s", ctx->put, ctx->content);
         
-        char* end;
-        char* ssid = strstr(ctx->content, "SSID=") + strlen("SSID=");
-        end = strchr(ssid, '&');
-        if(!end) {
-            end = ctx->content + ctx->put-1;
-        }
-        int ssid_len = end - ssid;
         
-        char* pass = strstr(ctx->content, "pass=") + strlen("pass=");
-        end = strchr(pass, '&');
-        if(!end) {
-            end = ctx->content + ctx->put-1;
-        }
-        int pass_len = end - pass;
+        int ssid_len;
+        char* ssid = get_string_in_post(ctx->content, "SSID=", &ssid_len);
         
-        char* broker = strstr(ctx->content, "broker=")+ strlen("broker=");
-        end = strchr(broker, '&');
-        if(!end) {
-            end = ctx->content + ctx->put-1;
-        }
-        int broker_len = end - broker;
+        int pass_len;
+        char* pass = get_string_in_post(ctx->content, "pass=", &pass_len);
 
-        char* topic = strstr(ctx->content, "topic=")+ strlen("topic=");
-        end = strchr(topic, '&');
-        if(!end) {
-            end = ctx->content + ctx->put-1;
-        }
-        int topic_len = end - topic;
+        int pass_conf_len;
+        char* pass_conf = get_string_in_post(ctx->content, "pass_confirm=", &pass_conf_len);
+        
+        int broker_len;
+        char* broker = get_string_in_post(ctx->content, "broker=", &broker_len);
+        
+        int topic_len;
+        char* topic = get_string_in_post(ctx->content, "topic=", &topic_len);
+            
 
-        char* port = strstr(ctx->content, "port=")+ strlen("port=");
-        end = strchr(port, '&');
-        if(!end) {
-            end = ctx->content + ctx->put-1;
-        }
-        int port_len = end - port;
+        int port_len;
+        char* port_str = get_string_in_post(ctx->content, "port=", &port_len);
+
+        int ap_ssid_len;
+        char* ap_ssid = get_string_in_post(ctx->content, "ap_ssid=", &ap_ssid_len);
+
+        int ap_pass_len;
+        char* ap_pass = get_string_in_post(ctx->content, "ap_pass=", &ap_pass_len);
+
+        int ap_pass_conf_len;
+        char* ap_pass_conf = get_string_in_post(ctx->content, "ap_pass_confirm=", &ap_pass_conf_len);
+
+
+        int ap_chan_len;
+        char* ap_chan_str = get_string_in_post(ctx->content, "ap_chan=", &ap_chan_len);
 
         ssid[ssid_len] = 0;
         pass[pass_len] = 0;
+        pass_conf[pass_conf_len] = 0;
         topic[topic_len] = 0;
         broker[broker_len] = 0;
-        port[port_len] = 0;
+        port_str[port_len] = 0;
+        ap_ssid[ap_ssid_len] = 0;
+        ap_pass[ap_pass_len] = 0;
+        ap_pass_conf[ap_pass_conf_len] = 0;
+        ap_chan_str[ap_chan_len] = 0;
         
         parse_url_encoded(ssid);
         parse_url_encoded(pass);
+        parse_url_encoded(pass_conf);
         parse_url_encoded(topic);
         parse_url_encoded(broker);
+        parse_url_encoded(ap_ssid);
+        parse_url_encoded(ap_pass);
+        parse_url_encoded(ap_pass_conf);
         
         
         //TUERSCHILD_LOGW(tag, "conf: %*s %*s %*s %*s ", ssid_len, ssid, pass_len, pass, broker_len, broker, topic_len, topic);
-        TUERSCHILD_LOGW(tag, "conf: %s %s %s %s %s", ssid, pass, broker, topic, port);
+        //TUERSCHILD_LOGW(tag, "conf: %s %s %s %s %s", ssid, pass, broker, topic, port_str);
         //TUERSCHILD_LOGW(tag, "field lengths: %d, %d, %d, %d, %d", ssid_len, pass_len, broker_len, topic_len, port_len);
 
-        if(ssid && pass && topic&& broker) {
+        if( (strcmp(pass_conf, pass) == 0) && (strcmp(ap_pass_conf, ap_pass)  == 0) ) {
             TUERSCHILD_LOGW(tag, "saving new config");
+            
             tuerschild_config_t* conf = request->user_ctx;
-            tuerschild_config_t new_conf = {.hostname = broker, .password = pass, .port = atoi(port), .ssid = ssid, .topic = topic};
-            *conf = new_conf;
+            //tuerschild_config_t new_conf = {.broker = broker, .password = pass, .port = atoi(port), .ssid = ssid, .topic = topic};
+            //*conf = new_conf;
+            
+            if(pass_len && pass_conf_len && ap_pass_len && ap_pass_conf_len){
+              conf_set(conf, ssid, pass, broker, atoi(port_str), topic, ap_ssid, ap_pass, atoi(ap_chan_str));  
+            } else {
+                conf_set_ssid(conf, ssid);
+                conf_set_broker(conf, broker);
+                conf_set_port(conf, atoi(port_str));
+                conf_set_topic(conf, topic);
+                conf_set_ap_ssid(conf, ap_ssid);
+                conf_set_ap_chan(conf, atoi(ap_chan_str));
+                if(pass_len && pass_conf) {
+                    conf_set_pass(conf, pass);
+                }
+                if(ap_pass_len && ap_pass_conf_len) {
+                    conf_set_ap_pass(conf, ap_pass);
+                }
+            }
+            httpd_resp_send(request, "saved config", HTTPD_RESP_USE_STRLEN);
+            xEventGroupSetBits(httpd_events, CONF_RECEIVED_BIT);
+        } else {
+            httpd_resp_send(request, "passwords differ", HTTPD_RESP_USE_STRLEN);
         }
 
-        httpd_resp_send(request, "saved config", HTTPD_RESP_USE_STRLEN);
-        #warning TODO FREE connection context
-        //free(ctx->content);
-        //free(ctx);
+        
+
+        free(ctx->content);
+        free(ctx);
         request->sess_ctx = NULL;
     }
-    xEventGroupSetBits(httpd_events, CONF_RECEIVED_BIT);
+    
     return ESP_OK;
 }
 
@@ -193,6 +283,9 @@ int start_recv_config(tuerschild_config_t *conf)
         return 0;
     }
     TUERSCHILD_LOGI(tag, "server has port: %d", server_conf.server_port);
+
+    conf_get.user_ctx = conf;
+
     error = httpd_register_uri_handler(server, &conf_get);
     if(error != ESP_OK) {
         TUERSCHILD_LOGE(tag, "failed to register get with httpd");
@@ -258,8 +351,21 @@ int parse_url_encoded(char* str)
         default:
             *(put++) = *(get++);
         }
-        putchar(*(put-1));
+        
     }
     *put = 0;
     return put - str;
+}
+
+char* get_string_in_post(char* post, const char* key_str, int* len)
+{
+    
+    char* val_str = strstr(post, key_str) + strlen(key_str);
+    char* end = strchr(val_str, '&');
+    if(!end) {
+        *len = strlen(val_str);
+    } else 
+    *len = end - val_str;
+
+    return val_str;
 }

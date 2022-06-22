@@ -1,5 +1,7 @@
 #include "tuerschild.h"
 
+
+
 const char* tag = "tuerschild application";
 
 #warning dummy state
@@ -16,6 +18,7 @@ void app_main(void)
 	state_t state = STATE_INIT;
 	
 	tuerschild_config_t conf;
+
 	
 	while(1) {
 		switch(state) {
@@ -24,12 +27,14 @@ void app_main(void)
 			if(!early_init()) {
 				state = STATE_ERR;
 			} else {
+				init_empty_conf(&conf);
 				state = STATE_GET_CONF;
 			}
 			break;
 			
 		case STATE_GET_CONF:
-			if(config_requested() || !allocate_and_load_configuration(&conf)) {
+			if(!read_conf_from_nvs(&conf) || config_requested()) {
+				//dummy_conf();
 				state = STATE_PREP_CONFIG;
 			} else {
 				state = STATE_PREP_RECV;
@@ -71,6 +76,7 @@ void app_main(void)
 				state = STATE_ERR;
 			} else {
 				state = STATE_ENTER_SLEEP;
+				//state = STATE_RESERVED;
 			}
 			
 			break;
@@ -104,8 +110,6 @@ void app_main(void)
 				state = STATE_CONFIG;
 			}*/
 			//state = STATE_CONFIG;
-			TUERSCHILD_LOGW(tag, "waiting with only ap");
-			tuerschild_delay_ms(10000);
 			break;
 			
 		case STATE_CONFIG:
@@ -124,7 +128,8 @@ void app_main(void)
 			}
 			break;
 		case STATE_RESERVED:
-			
+			time_from_sntp();
+			state = STATE_ENTER_SLEEP;
 		break;
 		default:
 			state = STATE_ERR;
@@ -132,6 +137,8 @@ void app_main(void)
 			break;
 		}
 		TUERSCHILD_LOGI(tag, "state: %d", state);
+		tuerschild_delay_ms(1000);
+		//time_from_sntp();
 		yield();
 	}
 }
