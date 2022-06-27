@@ -6,14 +6,28 @@ import de.thkoeln.iottuerschild.client.database.Raum;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Abbildung einer Nachricht für das MQTTNachricht Objekt
+ * @author Patrick Schmidt
+ * @version 1.0
+ * @since 15.06.2022
+ */
 public class Nachricht{
 
-    private String titel;
-    private String verantwortlicher;
-    private String uhrzeit;
-    private Raum raum;
-    private boolean aktuellesMeeting;
+    private String titel; //Meeting Titelname
+    private String verantwortlicher; //Email oder Name des Verantwortlichen
+    private String uhrzeit; //Uhrzeit des Meetings
+    private Raum raum; //Raum in welches das Meeting stattfindet
+    private boolean aktuellesMeeting; //Ist das Meeting ein aktuelles Meeting oder nicht
 
+    /**
+     * Constructor der Nachricht
+     * @param titel
+     * @param uhrzeit
+     * @param verantwortlicher
+     * @param aktuellesMeeting
+     * @param raum
+     */
     public Nachricht(String titel, String uhrzeit, String verantwortlicher, boolean aktuellesMeeting, Raum raum) {
         this.titel = titel;
         this.uhrzeit = uhrzeit;
@@ -22,6 +36,11 @@ public class Nachricht{
         this.raum = raum;
     }
 
+    /**
+     * Constructor der Nachricht, wenn klar ist, dass es kein Aktuelles Meeting ist
+     * @param titel
+     * @param uhrzeit
+     */
     public Nachricht(String titel, String uhrzeit) {
         this.titel = titel;
         this.uhrzeit = uhrzeit;
@@ -30,6 +49,12 @@ public class Nachricht{
         this.raum = null;
     }
 
+    /**
+     * Constructor der Nachricht, wenn klar ist, dass es ein Aktuelles Meeting ist
+     * @param titel
+     * @param uhrzeit
+     * @param verantwortlicher
+     */
     public Nachricht (String titel, String uhrzeit, String verantwortlicher) {
         this.titel = titel;
         this.uhrzeit = uhrzeit;
@@ -76,6 +101,10 @@ public class Nachricht{
         this.uhrzeit = uhrzeit;
     }
 
+    /**
+     * Gibt ein KeyValuePair zurück um daraus ein JSONObject zu bauen
+     * @return Map
+     */
     public Map getKeyValuePair () {
         Map<String, String>map = new HashMap<>();
         map.put("uhrzeit", this.uhrzeit);
@@ -84,6 +113,10 @@ public class Nachricht{
         return map;
     }
 
+    /**
+     * Gibt ein KeyValuePair zurück um draus ein JSONObject zu bauen für ein aktuelles Meeting
+     * @return
+     */
     public Map getKeyValuePairMitVerantworlichen () {
         Map<String, String> map = new HashMap<>();
         map.put("titel", this.titel);

@@ -5,17 +5,37 @@ import de.thkoeln.iottuerschild.client.calendar.CalendarAPI;
 import de.thkoeln.iottuerschild.client.database.Database;
 import de.thkoeln.iottuerschild.client.menu.Menu;
 
-import javax.xml.crypto.Data;
+import java.sql.Connection;
+import java.sql.SQLException;
 
-public class Main extends Thread {
+/**
+ * Das Programm soll über die GoogleAPI aus dem Google Calendar Events holen, die Daten verarbeiten an den Broker
+ * weiterleiten.
+ *
+ * @author Patrick Schmidt
+ * @version 1.0
+ * @since 15.06.2022
+ */
+
+public class Main{
 
     private static Menu menu;
-    private static Main main;
     private static CalendarAPI cAPI;
 
+    /**
+     *
+     * Mainklasse erstellt die Datenbank, falls keine exisiert und öffnet 2 Threads für Konsole und
+     * die CalendarAPI
+     *
+     * @param Args Argumente, die beim Programmstart abgearbeitet werden können
+     * @throws SQLException Falls die Datenbank nicht erstellt werden kann
+     */
+    public static void main (String[] Args) throws SQLException {
 
-    public static void main (String[] Args){
+        Database db = new Database();
+        Connection conn =db.connect();
 
+        conn.close();
 
         Thread menuThread = new Thread(() -> {
             menu = new Menu();
@@ -30,11 +50,5 @@ public class Main extends Thread {
         menuThread.start();
         calendarAPIThread.start();
 
-    }
-
-    public void run() {
-        while(true){
-
-        }
     }
 }

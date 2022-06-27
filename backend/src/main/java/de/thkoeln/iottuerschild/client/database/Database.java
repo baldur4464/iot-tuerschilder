@@ -4,12 +4,22 @@ import java.sql.*;
 import java.io.File;
 import java.util.ArrayList;
 
-public class Database {
 
+/**
+ * Datenbank-Modell für das Backend um Räume zu speichern
+ * @author Patrick Schmidt
+ * @version 1.0
+ * @since 15.06.2022
+ */
+public class Database {
+    /**
+     * Erstellt eine Verbindung mit der Datenbank her und erstellt eine neue Datenbank, wenn diese nicht
+     * existiert.
+     * @return Connection gibt die Verbindung der Datenbank zurück
+     */
     public Connection connect () {
 
         Connection conn = null;
-
         File existDB = new File("sqlite/db/test.db");
 
         if(existDB.exists()) {
@@ -22,17 +32,19 @@ public class Database {
         } else {
             createNewDatabase();
         }
-
         return conn;
     }
 
-    private void createNewDatabase () {
+    /**
+     * Erstellt eine Datenbank mit einer Tabelle für Raum
+     */
+    public void createNewDatabase () {
         String url = "jdbc:sqlite:sqlite/db/test.db";
         try {
             Connection conn = DriverManager.getConnection(url);
             Statement stmt = conn.createStatement();
 
-
+            //SQL Anweisung für Tabelle Raum mit RAUM_ID als PK, RAUM_NAME und RAUM_TOPIC
             String sql= "CREATE TABLE RAUM " +
                      "(RAUM_ID INTEGER PRIMARY KEY," +
                      "RAUM_NAME TEXT NOT NULL," +
@@ -42,31 +54,17 @@ public class Database {
             stmt.close();
             conn.close();
 
-            /*
-            sql = "CREATE TABLE BUCHUNG " +
-                    "(BUCHUNG_ID INT PRIMARY KEY NOT NULL," +
-                    "RAUM_ID INT NOT NULL," +
-                    "VERANTWORTLICHER TEXT NOT NULL," +
-                    "UHRZEIT_START DATETIME NOT NULL," +
-                    "UHRZEIT_ENDE DATETIME NOT NULL," +
-                    "FOREIGN KEY (RAUM_ID) " +
-                    "REFERENCES RAUM (RAUM_ID) " +
-                    "ON DELETE CASCADE " +
-                    "ON UPDATE NO ACTION)";
-
-            System.out.println(sql);
-
-            stmt.execute(sql);
-
-           */
-
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
         System.out.println("Neue Datenbank wird erstellt");
     }
 
+    /**
+     * Diese Funktion erstellt einen neuen Eintrag in der Datenbank für raum
+     * @param raumName Name des Raums
+     * @param raumTopic Topic URI des Raums
+     */
     public void erstelleRaum (String raumName, String raumTopic) {
 
         Connection conn = this.connect();
@@ -86,6 +84,10 @@ public class Database {
 
     }
 
+    /**
+     * Löscht einen Raum mit der ID des zu löschenden Raum
+     * @param raumId ID des Raums
+     */
     public void loescheRaum (int raumId) {
         Connection conn = this.connect();
 
@@ -102,6 +104,10 @@ public class Database {
         }
     }
 
+    /**
+     * Gibt alle verfügbaren Räume in der Datenbank aus
+     * @return ArrayList Eine Liste von Räumen
+     */
     public ArrayList getRaeume () {
 
         Connection conn = this.connect();
@@ -131,6 +137,11 @@ public class Database {
         }
     }
 
+    /**
+     * Gibt einen einzelnen Raum über den Namen aus
+     * @param raumName Name des Raums
+     * @return Raum-Objekt zugehärig des Raumnmaen
+     */
     public Raum getRaumByName(String raumName) {
         Raum raum = null;
         Connection conn = this.connect();

@@ -14,8 +14,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-
+/**
+ * Eine Menüanwendung, die nebenläufig zur Calendar-API läuft. In dem Menü kann man neue Raume einfügen, anzeigen
+ * und löschen lassen.
+ * @author Patrick Schmidt
+ * @version 1.0
+ * @since 15.06.2022
+ */
 public class Menu implements Runnable{
+    /**
+     * Diese Funktion implementiert den Thread und wird überschrieben für Runnable
+     */
     @Override
     public void run() {
 
@@ -66,6 +75,10 @@ public class Menu implements Runnable{
         } while (run);
     }
 
+    /**
+     * Fragt Informationen über den Raum und Topic ab und speichert diesen in der Datenbank
+     * @param br BufferedReader, damit kein neuer erstellt werden muss
+     */
     private void erstelleRaum(BufferedReader br) {
         String raumName;
         String raumTopic;
@@ -92,6 +105,9 @@ public class Menu implements Runnable{
         db.erstelleRaum(raumName, raumTopic);
     }
 
+    /**
+     * Ruft eine Liste von Raumobjekten ab und zeigt diese auf der Konsole an.
+     */
     private void zeigeRaeume() {
         Database db = new Database();
         ArrayList<Raum> raumList = db.getRaeume();
@@ -104,6 +120,11 @@ public class Menu implements Runnable{
         }
     }
 
+    /**
+     * Zeigt eine Liste von verfügbaren Räumen an. Bei Auswahl wird ein Objekt aus der DB gelöscht oder man kann
+     * zurück ins Hauptmenu gelangen.
+     * @param br
+     */
     private void loescheRaum(BufferedReader br) {
         Database db = new Database();
         ArrayList<Raum> raumList = db.getRaeume();
@@ -139,6 +160,10 @@ public class Menu implements Runnable{
         return;
     }
 
+    /**
+     * DEBUG
+     * Diese Funktion ist aktuell noch als DEBUG implementiert um den Publisher zu testen.
+     */
     private void sendeTestNachricht () {
 
         Nachricht aktuellesMeeting = new Nachricht("Aktuelles Testmeeting","12:00 - 13:00", "Patrick Schmidt");

@@ -29,6 +29,15 @@ import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/**
+ * Schnittstelle zwischen der Google CalendarAPI und dem Publisher. Das Programm sucht automatisch nach
+ * Events, sotiert sie nach Räumen, erstellt MQTTNachricht und gibt die Nachrichten den den Publisher weiter.
+ * Diese Schnittstelle kann auch durch andere Schnittstellen ersetzt werden.
+ *
+ * @author Patrick Schmidt
+ * @version 1.0
+ * @since 15.06.2022
+ */
 public class CalendarAPI implements Runnable{
     /** Application name. */
     private static final String APPLICATION_NAME = "Google Calendar API Java Quickstart";
@@ -71,6 +80,9 @@ public class CalendarAPI implements Runnable{
         return credential;
     }
 
+    /*
+     * Testmain um die Funktionsfähigkeit dieser Komponente zu Testen.
+     */
     public static void main(String... args) throws IOException, GeneralSecurityException {
         // Build a new authorized API client service.
 
@@ -79,24 +91,40 @@ public class CalendarAPI implements Runnable{
         System.exit(1);
     }
 
+    /**
+     * Ruft eine Liste von Events über die Google API ab.
+     *
+     * @return Liste von Events die im Kalender eingetragen sind.
+     */
     public List getEvents () {
         try {
+
+            //Authentifizierung
             final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
             Calendar service = new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
                     .setApplicationName(APPLICATION_NAME)
                     .build();
 
-            // List the next 10 events from the primary calendar.
+
             Date nowDate = new Date(System.currentTimeMillis());
 
+            //Ersellt eine Maximale Abfragezeit von x Stunden ab dem Abfragezeitraum
             java.util.Calendar cal = java.util.Calendar.getInstance();
             cal.setTime(nowDate);
-            cal.add(java.util.Calendar.HOUR_OF_DAY, 19);
+            cal.add(java.util.Calendar.HOUR_OF_DAY, 12);
             Date maxNow = cal.getTime();
 
             DateTime now = new DateTime(nowDate);
             DateTime maxDate = new DateTime(maxNow);
 
+            /*
+             * Parameter: die CalendarId
+             * Abruf der Events mit folgenden Settings
+             * Mindestzeitraum: Das jetztige Datum und Uhrzeit
+             * Maximalzeitraum: Das jetztige Datum und Uhrzeit + x Stunden
+             * Sortiert nach: Startdatum
+             * Single Events: Wahr
+             */
             Events events = service.events().list("9r74t1cf6i83ibqpa443q7flh0@group.calendar.google.com")
                     .setTimeMin(now)
                     .setTimeMax(maxDate)
@@ -113,6 +141,9 @@ public class CalendarAPI implements Runnable{
 
     }
 
+    /**
+     * Diese Methode verarbeitet die Events und schickt anschließend die Daten über den Publisher an den MQTT-Broker
+     */
     public void sendMqttNachricht () {
 
         Database db = new Database();
@@ -125,6 +156,10 @@ public class CalendarAPI implements Runnable{
 
         List<Nachricht> buchungen = new ArrayList<>();
 
+        /*
+         * Für jedes Event wird eine Buchung erstellt. Außerdem wird das Start- und Endzeitpunkt benötigt. Damit wird
+         * ermittelt ob es sich bei dem Event um ein Aktuelles Meeting handelt oder nicht.
+         */
         for (Event event : events) {
 
             Nachricht buchung;
@@ -137,7 +172,9 @@ public class CalendarAPI implements Runnable{
             String end = df.format(date2);
             String uhrzeit = start + "-" + end;
 
+            //Wenn es einen Raum nicht in der Datenbank existiert, wird keine Buchung erstellt.
             if(db.getRaumByName(event.getLocation()) != null) {
+                //Wenn ein Event zwischen Start und Endzeitpunkt exisiert wird Buchung mit Aktuelles Meeting True erstellt ansonsten mit False
                 if (event.getStart().getDateTime().getValue() <= now.getValue() && event.getEnd().getDateTime().getValue() >= now.getValue()) {
                     buchung = new Nachricht(event.getSummary(), uhrzeit, event.getCreator().getEmail(), true, db.getRaumByName(event.getLocation()));
                 } else {
@@ -147,6 +184,10 @@ public class CalendarAPI implements Runnable{
             }
         }
 
+        /*
+         * Für jeden existierenden Raum in der Datenbank wird nun eine sortierte Liste der einzelnen Events erstellt
+         * Nachdem die sortierte Liste erstellt wird spezifisch der Anzahl der Events eine Funktion aufgerufen
+         */
         for (Raum raum: raeume) {
             List<Nachricht> sortierteListe = new ArrayList<>();
 
@@ -181,11 +222,17 @@ public class CalendarAPI implements Runnable{
         return;
     }
 
+    /**
+     * Wenn es für einen Raum kein Event gibt wird diese Funktion aufgerufen
+     * @param raum Der Raum auf dem die Nachricht erstellt wird
+     */
     private void erstelleNachrichtohneEvent(Raum raum) {
 
+        //Erstellt 2 Nachrichten, Eine für ein aktuelles Freies Meeting und für keine existierenden Meetings
         Nachricht aktuellesMeeting = new Nachricht("Frei","", "");
         Nachricht meeting = new Nachricht("", (""));
 
+        //Erstellt die MQTTNachricht
         MQTTNachricht mqttMessage = new MQTTNachricht(
                 new JSONObject(aktuellesMeeting.getKeyValuePairMitVerantworlichen()),
                 new JSONObject(meeting.getKeyValuePair()),
@@ -194,20 +241,29 @@ public class CalendarAPI implements Runnable{
                 new JSONObject(meeting.getKeyValuePair()),
                 new JSONObject(getSystemInfo()));
 
+        //Publisht die MQTT Nachricht
         Publisher pub = Publisher.getInstance();
         pub.sendNachricht(raum.getRaumTopic(), mqttMessage.buildMqttJson().toString(), 0);
     }
 
+    /**
+     * Wenn es für den Raum 1 Event gibt, wird diese Funktion aufgerufen
+     * @param raum Der Raum auf dem die Nachricht erstellt wir
+     * @param buchungen Sortierte Liste mit Buchungen für den angegeben Raum
+     */
     private void erstelleNachrichteinEvent(Raum raum, List<Nachricht> buchungen) {
 
         JSONObject aktuellesMeeting;
         JSONObject meeting1;
 
+        //Es wird überprüft, ob es ein Aktuelles Meeting gibt
         if(buchungen.get(0).isAktuellesMeeting()) {
+            //Wenn ja wird ein JSON Object für das Aktuelle Meeting erstellt und die 1. Meeting Nachricht bleibt leer
             aktuellesMeeting = new JSONObject(buchungen.get(0).getKeyValuePairMitVerantworlichen());
             Nachricht meeting1Nachricht = new Nachricht("", (""));
             meeting1 = new JSONObject(meeting1Nachricht.getKeyValuePair());
         } else {
+            //Falls nicht wird das Aktuelle Meeting als frei markiert und die das 1. Meeting enthält die Buchungsinformationen
             Nachricht aktuellesMeetingNachricht = new Nachricht("Frei", "", "");
             aktuellesMeeting = new JSONObject(aktuellesMeetingNachricht.getKeyValuePairMitVerantworlichen());
             meeting1 = new JSONObject(buchungen.get(0).getKeyValuePair());
@@ -229,11 +285,17 @@ public class CalendarAPI implements Runnable{
 
     }
 
+    /**
+     * Wenn es für den Raum 2 Event gibt, wird diese Funktion aufgerufen
+     * @param raum Der Raum auf dem die Nachricht erstellt wir
+     * @param buchungen Sortierte Liste mit Buchungen für den angegeben Raum
+     */
     private void erstelleNachrichtzweiEvent(Raum raum, List<Nachricht> buchungen) {
         JSONObject aktuellesMeeting;
         JSONObject meeting1;
         JSONObject meeting2;
 
+        //Es wird überprüft, ob es ein Aktuelles Meeting gibt
         if(buchungen.get(0).isAktuellesMeeting()) {
             aktuellesMeeting = new JSONObject(buchungen.get(0).getKeyValuePairMitVerantworlichen());
             meeting1 = new JSONObject(buchungen.get(1).getKeyValuePair());
@@ -262,13 +324,20 @@ public class CalendarAPI implements Runnable{
         pub.sendNachricht(raum.getRaumTopic(), mqttMessage.buildMqttJson().toString(), 0);
     }
 
+    /**
+     * Wenn es für den Raum 3 Event gibt, wird diese Funktion aufgerufen
+     * @param raum Der Raum auf dem die Nachricht erstellt wir
+     * @param buchungen Sortierte Liste mit Buchungen für den angegeben Raum
+     */
     private void erstelleNachrichtdreiEvent(Raum raum, List<Nachricht> buchungen) {
         JSONObject aktuellesMeeting;
         JSONObject meeting1;
         JSONObject meeting2;
         JSONObject meeting3;
 
+        //Es wird überprüft, ob es ein Aktuelles Meeting gibt
         if(buchungen.get(0).isAktuellesMeeting()) {
+            //Wenn Ja wird 1. Buchung zum Aktuelles Meeting und Buchung 1 und 2 zu Meeting 1-2. Meeting 3 und 4 bleiben frei
             aktuellesMeeting = new JSONObject(buchungen.get(0).getKeyValuePairMitVerantworlichen());
             meeting1 = new JSONObject(buchungen.get(1).getKeyValuePair());
             meeting2 = new JSONObject(buchungen.get(2).getKeyValuePair());
@@ -276,6 +345,7 @@ public class CalendarAPI implements Runnable{
             Nachricht meeting3Nachricht = new Nachricht("", (""));
             meeting3 = new JSONObject(meeting3Nachricht.getKeyValuePair());
         } else {
+            //Falls nicht ist aktuelles Meeting Frei und Buchung 1-3 gleich Meeting 1-3. Buchung 4 bleibt frei
             Nachricht aktuellesMeetingNachricht = new Nachricht("Frei", "", "");
             aktuellesMeeting = new JSONObject(aktuellesMeetingNachricht.getKeyValuePairMitVerantworlichen());
             meeting1 = new JSONObject(buchungen.get(0).getKeyValuePair());
@@ -298,6 +368,11 @@ public class CalendarAPI implements Runnable{
         pub.sendNachricht(raum.getRaumTopic(), mqttMessage.buildMqttJson().toString(), 0);
     }
 
+    /**
+     * Wenn es für den Raum 4 Event gibt, wird diese Funktion aufgerufen
+     * @param raum Der Raum auf dem die Nachricht erstellt wir
+     * @param buchungen Sortierte Liste mit Buchungen für den angegeben Raum
+     */
     private void erstelleNachrichtvierEvent(Raum raum, List<Nachricht> buchungen) {
         JSONObject aktuellesMeeting;
         JSONObject meeting1;
@@ -305,7 +380,9 @@ public class CalendarAPI implements Runnable{
         JSONObject meeting3;
         JSONObject meeting4;
 
+        //Es wird überprüft, ob es ein Aktuelles Meeting gibt
         if(buchungen.get(0).isAktuellesMeeting()) {
+            //Wenn Ja wird die 1. Buchung zum aktuellen Meeting udn die 3 Folgenden Events zu Meeting 1-3. Das 4. Meeting bleibt frei
             aktuellesMeeting = new JSONObject(buchungen.get(0).getKeyValuePairMitVerantworlichen());
             meeting1 = new JSONObject(buchungen.get(1).getKeyValuePair());
             meeting2 = new JSONObject(buchungen.get(2).getKeyValuePair());
@@ -314,6 +391,7 @@ public class CalendarAPI implements Runnable{
             Nachricht meeting4Nachricht = new Nachricht("", (""));
             meeting4 = new JSONObject(meeting4Nachricht.getKeyValuePair());
         } else {
+            //Falls nicht wird Buchung 1-4 gleich Meeting 1-4 und Aktuelles Meeting ist Frei
             Nachricht aktuellesMeetingNachricht = new Nachricht("Frei", "", "");
             aktuellesMeeting = new JSONObject(aktuellesMeetingNachricht.getKeyValuePairMitVerantworlichen());
             meeting1 = new JSONObject(buchungen.get(0).getKeyValuePair());
@@ -336,6 +414,11 @@ public class CalendarAPI implements Runnable{
         pub.sendNachricht(raum.getRaumTopic(), mqttMessage.buildMqttJson().toString(), 0);
     }
 
+    /**
+     * Wenn es für den Raum mehr als 4 Events gibt, wird diese Funktion aufgerufen
+     * @param raum Der Raum auf dem die Nachricht erstellt wir
+     * @param buchungen Sortierte Liste mit Buchungen für den angegeben Raum
+     */
     private void erstelleNachrichtmehrEvent(Raum raum, List<Nachricht> buchungen) {
         JSONObject aktuellesMeeting;
         JSONObject meeting1;
@@ -343,13 +426,16 @@ public class CalendarAPI implements Runnable{
         JSONObject meeting3;
         JSONObject meeting4;
 
+        //Es wird überprüft, ob es ein Aktuelles Meeting gibt
         if(buchungen.get(0).isAktuellesMeeting()) {
+            //Falls Ja wird die 1. Buchung als Aktuelles Meeting erstellt und die nächsten 4 Folgenden Events sind Meeting 1-4
             aktuellesMeeting = new JSONObject(buchungen.get(0).getKeyValuePairMitVerantworlichen());
             meeting1 = new JSONObject(buchungen.get(1).getKeyValuePair());
             meeting2 = new JSONObject(buchungen.get(2).getKeyValuePair());
             meeting3 = new JSONObject(buchungen.get(3).getKeyValuePair());
             meeting4 = new JSONObject(buchungen.get(4).getKeyValuePair());
         } else {
+            //Falls es kein Aktuelles Meeting gibt ist Buchung 1-4 gleich Meeting 1-4 und Aktuelles Meeting ist Frei
             Nachricht aktuellesMeetingNachricht = new Nachricht("Frei", "", "");
             aktuellesMeeting = new JSONObject(aktuellesMeetingNachricht.getKeyValuePairMitVerantworlichen());
             meeting1 = new JSONObject(buchungen.get(0).getKeyValuePair());
@@ -372,6 +458,10 @@ public class CalendarAPI implements Runnable{
         pub.sendNachricht(raum.getRaumTopic(), mqttMessage.buildMqttJson().toString(), 0);
     }
 
+    /**
+     * Erstellt eine SystemInfo, zu welchem Datum und welcher Uhrzeit eine Nachricht erstellt wurde.
+     * @return Map mit Aktuellem Datum und Uhrzeit
+     */
     private Map getSystemInfo () {
         Date now = new Date(System.currentTimeMillis());
         SimpleDateFormat df1 = new SimpleDateFormat("dd.MM.yy");
@@ -385,12 +475,15 @@ public class CalendarAPI implements Runnable{
     }
 
 
+    /**
+     * Thread Run methode die Überschrieben wurde von Runnable
+     */
     @Override
     public void run() {
         while(true) {
             try {
                 sendMqttNachricht();
-                Thread.sleep(10000);
+                Thread.sleep(60000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

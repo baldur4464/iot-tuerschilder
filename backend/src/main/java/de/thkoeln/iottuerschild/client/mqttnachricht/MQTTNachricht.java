@@ -3,10 +3,13 @@ package de.thkoeln.iottuerschild.client.mqttnachricht;
 import org.json.JSONObject;
 
 
-
+/**
+ * Diese Klasse fügt alle nötigen Information zusammen um eine Nachricht an den Broker zu versenden
+ * @author Patrick Schmidt
+ * @version 1.0
+ * @since 15.06.2022
+ */
 public class MQTTNachricht {
-
-    private String topic;
 
     private JSONObject aktuellesMeeting;
     private JSONObject meeting1;
@@ -15,6 +18,15 @@ public class MQTTNachricht {
     private JSONObject meeting4;
     private JSONObject systeminfo;
 
+    /**
+     * Constructor für das MQTTNachricht-Objekt
+     * @param aktuellesMeeting
+     * @param meeting1
+     * @param meeting2
+     * @param meeting3
+     * @param meeting4
+     * @param systeminfo
+     */
     public MQTTNachricht(JSONObject aktuellesMeeting, JSONObject meeting1, JSONObject meeting2, JSONObject meeting3, JSONObject meeting4, JSONObject systeminfo) {
         this.aktuellesMeeting = aktuellesMeeting;
         this.meeting1 = meeting1;
@@ -72,6 +84,11 @@ public class MQTTNachricht {
         this.systeminfo = systemInfo;
     }
 
+    /**
+     * Erstellt aus den Informationen eine neues JSON-Object mit aktuellem Meeting, Meeting1, Meeting2, Meeting3, Meeting4
+     * und systeminfo
+     * @return JSONObject ein JSON-Object des MQTTNachricht Objekts
+     */
     public JSONObject buildMqttJson () {
         JSONObject object = new JSONObject();
         object.put("aktuellesMeeting", this.aktuellesMeeting);

@@ -1,5 +1,12 @@
 package de.thkoeln.iottuerschild.client.database;
 
+/**
+ * Raum Objekt, dass die Räume aus der Datenbank abbildet.
+ * @author Patrick Schmidt
+ * @version 1.0
+ * @since 15.06.2022
+ */
+
 public class Raum {
     private int raumId;
     private String raumName;
