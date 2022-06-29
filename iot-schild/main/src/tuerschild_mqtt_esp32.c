@@ -27,10 +27,9 @@ static time_t start_recv;
 static void event_handler_mqtt(void* arg, esp_event_base_t base, int32_t event_id, void* event_data) {
 	esp_mqtt_event_handle_t event = event_data;
 	switch(event_id) {
+		#warning TODO:segmented mqtt messages
 		case MQTT_EVENT_DATA:
-			puts("got data");
-			//printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
-			//printf("DATA=%.*s\r\n", event->data_len, event->data);
+			
 			if(event->topic_len > TOPIC_IN_MAX_LEN || event->total_data_len > DATA_IN_MAX_LEN) {
 				TUERSCHILD_LOGE(tag, "unsupported data length");
 				xEventGroupSetBits(mqtt_events, MQTT_ERROR_BIT);
@@ -63,7 +62,7 @@ static void event_handler_mqtt(void* arg, esp_event_base_t base, int32_t event_i
 int bring_mqtt_client_up(tuerschild_config_t* conf)
 {
 	esp_mqtt_client_config_t mqtt_cfg = {
-		.host = conf->hostname,
+		.host = conf->broker,
 		.transport = MQTT_TRANSPORT_OVER_TCP,
 		.port = conf->port
 	};
