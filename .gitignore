@@ -9,10 +9,15 @@ backend/*.iml
 backend/.env
 backend/sqlite/db/*.db
 broker
+<<<<<<< HEAD
 backend/tokens
 backend/src/main/resources/credentials.json
 backend/credentials.json
 
+=======
+backend/tokens/*
+backend/src/main/resources/*
+>>>>>>> adhoc_config
 
 #Ignore autogenerates files from Maven
 backend/target
