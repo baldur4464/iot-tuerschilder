@@ -33,9 +33,8 @@ public class Main{
     public static void main (String[] Args) throws SQLException {
 
         Database db = new Database();
-        Connection conn =db.connect();
+        db.createNewDatabase();
 
-        conn.close();
 
         Thread menuThread = new Thread(() -> {
             menu = new Menu();

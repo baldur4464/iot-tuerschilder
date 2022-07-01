@@ -20,11 +20,11 @@ public class Database {
     public Connection connect () {
 
         Connection conn = null;
-        File existDB = new File("sqlite/db/test.db");
+        File existDB = new File("sqlite/db/raum.db");
 
         if(existDB.exists()) {
             try{
-                String url = "jdbc:sqlite:sqlite/db/test.db";
+                String url = "jdbc:sqlite:sqlite/db/raum.db";
                 conn = DriverManager.getConnection(url);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -39,25 +39,29 @@ public class Database {
      * Erstellt eine Datenbank mit einer Tabelle für Raum
      */
     public void createNewDatabase () {
-        String url = "jdbc:sqlite:sqlite/db/test.db";
-        try {
-            Connection conn = DriverManager.getConnection(url);
-            Statement stmt = conn.createStatement();
+        File existDB = new File("sqlite/db/raum.db");
+        String url = "jdbc:sqlite:sqlite/db/raum.db";
 
-            //SQL Anweisung für Tabelle Raum mit RAUM_ID als PK, RAUM_NAME und RAUM_TOPIC
-            String sql= "CREATE TABLE RAUM " +
-                     "(RAUM_ID INTEGER PRIMARY KEY," +
-                     "RAUM_NAME TEXT NOT NULL," +
-                     "RAUM_TOPIC TEXT NOT NULL)";
+        if (!existDB.exists()) {
+            try {
+                Connection conn = DriverManager.getConnection(url);
+                Statement stmt = conn.createStatement();
 
-            stmt.executeUpdate(sql);
-            stmt.close();
-            conn.close();
+                //SQL Anweisung für Tabelle Raum mit RAUM_ID als PK, RAUM_NAME und RAUM_TOPIC
+                String sql = "CREATE TABLE RAUM " +
+                        "(RAUM_ID INTEGER PRIMARY KEY," +
+                        "RAUM_NAME TEXT NOT NULL," +
+                        "RAUM_TOPIC TEXT NOT NULL)";
 
-        } catch (SQLException e) {
-            e.printStackTrace();
+                stmt.executeUpdate(sql);
+                stmt.close();
+                conn.close();
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Neue Datenbank wird erstellt");
         }
-        System.out.println("Neue Datenbank wird erstellt");
     }
 
     /**
