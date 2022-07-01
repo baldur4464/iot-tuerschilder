@@ -1,11 +1,14 @@
 #include "tuerschild.h"
 
+
+
 const char* tag = "tuerschild application";
 
+#warning dummy state
 typedef enum state
 {
 	STATE_INIT = 0, STATE_GET_CONF, STATE_PREP_CONFIG, STATE_CONFIG, STATE_PREP_RECV,
-	STATE_RECV, STATE_PROCESS, STATE_DISPLAY, STATE_ENTER_SLEEP, STATE_ERR
+	STATE_RECV, STATE_PROCESS, STATE_DISPLAY, STATE_ENTER_SLEEP, STATE_ERR, STATE_RESERVED
 }state_t;
 
 
@@ -15,6 +18,7 @@ void app_main(void)
 	state_t state = STATE_INIT;
 	
 	tuerschild_config_t conf;
+
 	
 	while(1) {
 		switch(state) {
@@ -23,12 +27,14 @@ void app_main(void)
 			if(!early_init()) {
 				state = STATE_ERR;
 			} else {
+				init_empty_conf(&conf);
 				state = STATE_GET_CONF;
 			}
 			break;
 			
 		case STATE_GET_CONF:
-			if(config_requested() || !allocate_and_load_configuration(&conf)) {
+			if(!read_conf_from_nvs(&conf) || config_requested()) {
+				//dummy_conf();
 				state = STATE_PREP_CONFIG;
 			} else {
 				state = STATE_PREP_RECV;
@@ -36,7 +42,7 @@ void app_main(void)
 			break;
 			
 		case STATE_PREP_RECV:
-			if(!bring_wifi_up(&conf)) {
+			if(!bring_wifi_up(TUERSCHILD_WIFI_STATION, &conf)) {
 				state = STATE_ERR;
 			} else if(!bring_mqtt_client_up(&conf))  {
 				state = STATE_ERR;
@@ -50,12 +56,13 @@ void app_main(void)
 		case STATE_RECV:
 			if(mqtt_error()) {
 				state = STATE_ERR;
+				TUERSCHILD_LOGE(tag, "mqtt error");
 			} else if(mqtt_recv_success()) {
 				state = STATE_PROCESS;
 			} else if(mqtt_recv_timeout()) {
 				state =  STATE_ERR;
+				TUERSCHILD_LOGE(tag, "mqtt timeout");
 			}
-			deallocate_configuration(&conf);
 			break;
 		case STATE_PROCESS:
 			if(!process()) {
@@ -69,6 +76,7 @@ void app_main(void)
 				state = STATE_ERR;
 			} else {
 				state = STATE_ENTER_SLEEP;
+				//state = STATE_RESERVED;
 			}
 			
 			break;
@@ -78,21 +86,59 @@ void app_main(void)
 			break;
 		
 		case STATE_PREP_CONFIG:
-			state = STATE_CONFIG;
-			break;
+			if(!bring_wifi_up(TUERSCHILD_WIFI_AP, &conf)) {
+				state = STATE_ERR;
+			} else if(!start_recv_config(&conf)) {
+				state = STATE_ERR;
+			} else {
+				state = STATE_CONFIG;
+			}
 			
-		case STATE_CONFIG:
-			if(!dummy_conf()) {
+			/*if(!allocate_and_load_configuration(&conf)) {
+				state = STATE_ERR;
+			} else if(!bring_wifi_up(TUERSCHILD_WIFI_HYBRID, &conf)) {
 				state = STATE_ERR;
 			} else {
 				state = STATE_GET_CONF;
+			}*/
+			/*if(!bring_wifi_hybrid_up()) {
+				state = STATE_ERR;
+
+			} else if(!start_recv_config()) {
+				state = STATE_ERR;
+			} else {
+				state = STATE_CONFIG;
+			}*/
+			//state = STATE_CONFIG;
+			break;
+			
+		case STATE_CONFIG:
+			/*if(!dummy_conf()) {
+				state = STATE_ERR;
+			} else {
+				state = STATE_GET_CONF;
+			}*/
+			if(!done_recv_conf()) {
+				state = STATE_CONFIG;
+				tuerschild_delay_ms(1000);
+			} else {
+				stop_recv_config();
+				store_configuration(&conf);
+				state = STATE_GET_CONF;
 			}
 			break;
+		case STATE_RESERVED:
+			time_from_sntp();
+			state = STATE_ENTER_SLEEP;
+		break;
 		default:
 			state = STATE_ERR;
+			tuerschild_delay_ms(1000);
 			break;
 		}
 		TUERSCHILD_LOGI(tag, "state: %d", state);
+		tuerschild_delay_ms(1000);
+		//time_from_sntp();
 		yield();
 	}
 }

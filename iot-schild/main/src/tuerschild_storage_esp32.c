@@ -42,13 +42,22 @@ int store_configuration(tuerschild_config_t* conf)
 	error = nvs_set_str(nvs_handle, "pass", conf->password);
 	ret = ret && error == ESP_OK;
 	
-	error = nvs_set_str(nvs_handle, "host", conf->hostname);
+	error = nvs_set_str(nvs_handle, "host", conf->broker);
 	ret = ret && error == ESP_OK;
 	
 	error = nvs_set_u16(nvs_handle, "port", conf->port);
 	ret = ret && error == ESP_OK;
 	
 	error = nvs_set_str(nvs_handle, "topic", conf->topic);
+	ret = ret && error == ESP_OK;
+
+	error = nvs_set_str(nvs_handle, "ap_ssid", conf->ap_ssid);
+	ret = ret && error == ESP_OK;
+
+	error = nvs_set_str(nvs_handle, "ap_pass", conf->ap_password);
+	ret = ret && error == ESP_OK;
+
+	error = nvs_set_u16(nvs_handle, "ap_chan", conf->ap_channel);
 	ret = ret && error == ESP_OK;
 	
 	if(!ret) {
@@ -65,117 +74,108 @@ int store_configuration(tuerschild_config_t* conf)
 	return 1;
 };
 
-int allocate_and_load_configuration(tuerschild_config_t* conf)
+int read_conf_from_nvs(tuerschild_config_t* conf)
 {
 	esp_err_t error;
 	nvs_handle_t nvs_handle;
 	
-	int ret = 1;
 	size_t length;
 	
-	conf->ssid = NULL;
-	conf->password = NULL;
-	conf->hostname = NULL;
-	conf->topic = NULL;
+	char buf[512];
+	uint16_t port;
+	uint8_t chan;
 	
-	error = nvs_open("config", NVS_READWRITE, &nvs_handle);
+	error = nvs_open("config", NVS_READONLY, &nvs_handle);
 	if(error != ESP_OK) {
 		TUERSCHILD_LOGE(tag, "failed to open nvs memory for reading");
 		nvs_close(nvs_handle);
 		return 0;
 	}
 	
-	error = nvs_get_str(nvs_handle, "ssid", NULL, &length);
-	if(error != ESP_OK) {
-		TUERSCHILD_LOGE(tag, "failed to read ssid len");
-		nvs_close(nvs_handle);
-		return 0;
-	}
-	conf->ssid = malloc(length);
-	error = nvs_get_str(nvs_handle, "ssid", conf->ssid, &length);
+	length = sizeof(buf);
+	error = nvs_get_str(nvs_handle, "ssid", buf, &length);
 	if(error != ESP_OK) {
 		TUERSCHILD_LOGE(tag, "failed to read ssid");
 		nvs_close(nvs_handle);
-		deallocate_configuration(conf);
+		set_empty_conf(conf);
 		return 0;
 	}
-	
-	error = nvs_get_str(nvs_handle, "pass", NULL, &length);
-	if(error != ESP_OK) {
-		TUERSCHILD_LOGE(tag, "failed to read pass len");
-		nvs_close(nvs_handle);
-		deallocate_configuration(conf);
-		return 0;
-	}
-	conf->password = malloc(length);
-	error = nvs_get_str(nvs_handle, "pass", conf->password, &length);
+	conf_set_ssid(conf, buf);
+
+	length = sizeof(buf);
+	error = nvs_get_str(nvs_handle, "pass", buf, &length);
 	if(error != ESP_OK) {
 		TUERSCHILD_LOGE(tag, "failed to read pass");
 		nvs_close(nvs_handle);
-		deallocate_configuration(conf);
+		set_empty_conf(conf);
 		return 0;
 	}
+	conf_set_pass(conf, buf);
 	
-	error = nvs_get_str(nvs_handle, "host", NULL, &length);
-	if(error != ESP_OK) {
-		TUERSCHILD_LOGE(tag, "failed to read host len");
-		nvs_close(nvs_handle);
-		deallocate_configuration(conf);
-		return 0;
-	}
-	conf->hostname = malloc(length);
-	error = nvs_get_str(nvs_handle, "host", conf->hostname, &length);
+	length = sizeof(buf);
+	error = nvs_get_str(nvs_handle, "host", buf, &length);
 	if(error != ESP_OK) {
 		TUERSCHILD_LOGE(tag, "failed to read host");
 		nvs_close(nvs_handle);
-		deallocate_configuration(conf);
+		set_empty_conf(conf);
 		return 0;
 	}
-	
+	conf_set_broker(conf, buf);
+
+
+	error = nvs_get_u16(nvs_handle, "port", &port);
+	if(error != ESP_OK) {
+		TUERSCHILD_LOGE(tag, "failed to read");
+		nvs_close(nvs_handle);
+		set_empty_conf(conf);
+		return 0;
+	}
+	conf_set_port(conf, port);
+
+	length = sizeof(buf);
+	error = nvs_get_str(nvs_handle, "topic", buf, &length);
+	if(error != ESP_OK) {
+		TUERSCHILD_LOGE(tag, "failed to read");
+		nvs_close(nvs_handle);
+		set_empty_conf(conf);
+		return 0;
+	}
+	conf_set_topic(conf, buf);
+
+	length = sizeof(buf);
+	error = nvs_get_str(nvs_handle, "ap_ssid", buf, &length);
+	if(error != ESP_OK) {
+		TUERSCHILD_LOGE(tag, "failed to read");
+		nvs_close(nvs_handle);
+		set_empty_conf(conf);
+		return 0;
+	}
+	conf_set_ap_ssid(conf, buf);
+
+	length = sizeof(buf);
+	error = nvs_get_str(nvs_handle, "ap_pass", buf, &length);
+	if(error != ESP_OK) {
+		TUERSCHILD_LOGE(tag, "failed to read");
+		nvs_close(nvs_handle);
+		set_empty_conf(conf);
+		return 0;
+	}
+	conf_set_ap_pass(conf, buf);
 
 	
-	error = nvs_get_u16(nvs_handle, "port", &conf->port);
+	error = nvs_get_u16(nvs_handle, "ap_chan", &chan);
 	if(error != ESP_OK) {
 		TUERSCHILD_LOGE(tag, "failed to read");
 		nvs_close(nvs_handle);
-		deallocate_configuration(conf);
+		set_empty_conf(conf);
 		return 0;
 	}
-	
-	error = nvs_get_str(nvs_handle, "topic", NULL, &length);
-	if(error != ESP_OK) {
-		TUERSCHILD_LOGE(tag, "failed to read");
-		nvs_close(nvs_handle);
-		deallocate_configuration(conf);
-		return 0;
-	}
-	conf->topic = malloc(length);
-	error = nvs_get_str(nvs_handle, "topic", conf->topic, &length);
-	if(error != ESP_OK) {
-		TUERSCHILD_LOGE(tag, "failed to read");
-		nvs_close(nvs_handle);
-		deallocate_configuration(conf);
-		return 0;
-	}
-	
+	conf_set_ap_chan(conf, chan);
+
+
 	nvs_close(nvs_handle);
 	
 
 	return 1;
 }
 
-void deallocate_configuration(tuerschild_config_t *conf)
-{
-	if(conf->ssid) {
-		free(conf->ssid);
-	}
-	if(conf->password) {
-		free(conf->password);
-	}
-	if(conf->hostname) {
-		free(conf->hostname);
-	}
-	if(conf->topic) {
-		free(conf->topic);
-	}
-}
