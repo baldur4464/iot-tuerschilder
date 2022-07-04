@@ -1,0 +1,131 @@
+@startuml
+class CalendarAPI{
+  - APPLICATION_NAME: String
+  - JSON_FACTORY: JsonFactory
+  - TOKENS_DIRECTORY_PATH: String
+  - SCOPES: List<String>
+  - CREDENTIALS_FILE_PATH: String
+
+  - getCredentials(NetHttpTransport): Credential
+  + getEvents() : List<Event>
+  + sendMqttNachricht(): void
+}
+
+
+class Database{
+  + connect(): Connection
+  + createNewDatabase(): void
+  + erstelleRaum(): void
+  + loescheRaum(int raumId): void
+  + getRaeume (): Arraylist<Raum>
+  + getRaumByName(String raumName): Raum
+}
+
+class Raum{
+  - raumId: int
+  - raumName: String
+  - raumTopic: String
+  ..Getter..
+  + getRaumId(): int
+  + getRaumName(): String
+  + getRaumTopic(): String
+  ..Setter..
+  + setRaumId(int): void
+  + setRaumName(String):void
+  + setRaumTopic(String): void
+}
+
+
+class Main{
+  - menu: Menu
+  - cAPI: CalendarAPI
+  + main(String[]):void
+}
+
+
+
+class Menu{
+  + run(): void
+  - erstelleRaum(BufferedReader): void
+  - zeigeRaeume(): void
+  - loescheRaum(BufferedReader): void
+  - sendeTestNachricht(): void
+}
+
+
+class Publisher << (S,#FF7700) Singleton >>{
+  - instance: Publisher
+  - client: MqttClient
+  - peristence: MemoryPeristence
+  - dotenv: Dotenv
+
+  + getInstance(): Publisher
+  + connect(String, String): void
+  + sendNachricht(String, String, int): void
+}
+
+
+
+class Nachricht{
+  - titel: String
+  - verantwortlicher: String
+  - uhrzeit: String
+  - raum: Raum
+  - aktuellesMeeting: boolean
+  ..Getter..
+  + getTitel(): String
+  + getVerantwortlicher(): String
+  + getRaum(): Raum
+  + isAktuellesMeeting(): boolean
+  + getUhrzeit(): uhrzeit
+  ..Setter..
+  + setTitel(String): void
+  + setVerantwortlicher(String): void
+  + setRaum(Raum): void
+  + setAktuellesMeeting(boolean): void
+  + setUhrzeit(String): void
+  ..other..
+  + getKeyValuePair(): Map
+  + getKeyValuePairMitVerantwortlichen(): Map 
+}
+
+class MQTTNachricht{
+  - aktuellesMeeting: JSONObject
+  - meeting1: JSONObject
+  - meeting2: JSONObject
+  - meeting3: JSONObject
+  - meeting4: JSONObject
+  - systeminfo: JSONObject
+  ..Getter..
+  + getAktuellesMeeting(): JSONObject
+  + getMeeting2(): JSONObject
+  + getMeeting3(): JSONObject
+  + getMeeting4(): JSONObject
+  + getMeeting1(): JSONObject
+  + getSystemInfo(): JSONObject
+  ..Setter..
+  + setAktuellesMeeting(JSONObject): void
+  + setMeeting1(JSONObject): void
+  + setMeeting2(JSONObject): void
+  + setMeeting3(JSONObject): void
+  + setMeeting4(JSONObject): void
+  + setSystemInfo(JSONObject): void
+  ..other..
+  + buildMqttJson(): JSONObject
+}
+
+CalendarAPI .. Publisher : <<uses>>
+CalendarAPI .. Database : <<uses>>
+CalendarAPI .. Raum : <<uses>>
+CalendarAPI .. Nachricht: <<uses>>
+CalendarAPI .. MQTTNachricht : <<uses>>
+
+Database .. Raum : <<uses>>
+
+Main .. Menu : <<uses>>
+Main .. CalendarAPI : <<uses>>
+Main .. Database : <<uses>>
+
+GoogleAPI ()- CalendarAPI
+MqttBroker ()- Publisher
+@enduml

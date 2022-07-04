@@ -1,0 +1,43 @@
+@startuml
+
+package "Backend-Server" {
+  [CalendarAPI]
+  [Database]
+  [Raum]
+  [Menu]
+  [Main]
+  [MQTTNachricht]
+  [Nachricht]
+  [Publisher]
+  
+  CalendarAPI --> Publisher : uses
+  CalendarAPI - GoogleAPI 
+  CalendarAPI --> Database : uses
+  CalendarAPI --> Raum : uses
+  CalendarAPI --> Nachricht: uses
+  CalendarAPI -- MQTTNachricht: uses
+
+  Main --> CalendarAPI : Thread
+  Main --> Menu: Thread
+  Main --> Database : uses
+
+}
+
+
+
+node "MQTT-Broker" {
+  Broker - Publisher : MQTT
+}
+
+
+database "SQLLite" {
+  [RAUM]
+}
+
+
+
+Database --> RAUM
+
+
+
+@enduml

@@ -83,13 +83,13 @@ public class CalendarAPI implements Runnable{
     /*
      * Testmain um die Funktionsfähigkeit dieser Komponente zu Testen.
      */
-    public static void main(String... args) throws IOException, GeneralSecurityException {
+    /*public static void main(String... args) throws IOException, GeneralSecurityException {
         // Build a new authorized API client service.
 
         CalendarAPI api = new CalendarAPI();
         api.sendMqttNachricht();
         System.exit(1);
-    }
+    }*/
 
     /**
      * Ruft eine Liste von Events über die Google API ab.
