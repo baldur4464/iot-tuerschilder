@@ -13,7 +13,7 @@ static const gpio_config_t pin_cfg = {
     .mode = GPIO_MODE_INPUT,
     .pin_bit_mask = RESET_PIN_MSK,
     .pull_down_en = GPIO_PULLDOWN_DISABLE,
-    .pull_up_en = GPIO_PULLUP_DISABLE
+    .pull_up_en = GPIO_PULLUP_ENABLE
 };
 
 int init_reset_btn()
