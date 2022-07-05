@@ -42,6 +42,8 @@ static void event_handler_mqtt(void* arg, esp_event_base_t base, int32_t event_i
 				data_in_len = event->data_len;
 				memcpy(topic_in_buf, event->topic, topic_in_len);
 				memcpy(data_in_buf, event->data, data_in_len);
+				data_in_buf[data_in_len] = 0;
+				topic_in_buf[topic_in_len] = 0;
 				xEventGroupSetBits(mqtt_events, MQTT_RECV_SUCCESS);
 			}
 			break;

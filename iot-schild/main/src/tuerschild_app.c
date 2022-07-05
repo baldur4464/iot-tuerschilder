@@ -2,7 +2,7 @@
 
 
 
-const char* tag = "tuerschild application";
+static const char* tag = "tuerschild application";
 
 #warning dummy state
 typedef enum state
@@ -19,7 +19,7 @@ void app_main(void)
 	
 	tuerschild_config_t conf;
 
-	
+	tuerschild_conf_request_t conf_request;
 	while(1) {
 		switch(state) {
 			
@@ -29,17 +29,49 @@ void app_main(void)
 			} else {
 				init_empty_conf(&conf);
 				state = STATE_GET_CONF;
+				conf_request = config_requested();
 			}
+			
 			break;
 			
 		case STATE_GET_CONF:
-			if(!read_conf_from_nvs(&conf) || config_requested()) {
-				//dummy_conf();
+			if(conf_request == TUERSCHILD_CONF_REQUEST_RESET) {
+				TUERSCHILD_LOGI(tag, "doiing full reset");
+				factory_settings();
+				read_conf_from_nvs(&conf);
+				state = STATE_PREP_CONFIG;
+			} else if(conf_request == TUERSCHILD_CONF_REQUEST_SIMPLE) {
+				TUERSCHILD_LOGI(tag, "bring config interface up");
+				if(read_conf_from_nvs(&conf)) {
+					state = STATE_PREP_CONFIG;
+				} else {
+					state = STATE_ERR;
+				}
+			} else if(read_conf_from_nvs(&conf)) {
+				TUERSCHILD_LOGI(tag, "proceed to reception");
+				state = STATE_PREP_RECV;
+			} else {
+				state = STATE_ERR;
+			}
+			conf_request = TUERSCHILD_CONF_REQUEST_NONE;
+			break;
+			/*if(!read_conf_from_nvs(&conf) ) {
+				TUERSCHILD_LOGI(tag, "conf not read");
+				dummy_conf();
+				if(read_conf_from_nvs(&conf)){
+					state = STATE_PREP_CONFIG;	
+				}else{
+					TUERSCHILD_LOGE(tag, "can't read config I just wrote");
+					state = STATE_ERR;
+				}
+				
+			} else if( config_requested()) {
+				TUERSCHILD_LOGI(tag, "conf requested");
 				state = STATE_PREP_CONFIG;
 			} else {
 				state = STATE_PREP_RECV;
 			}
-			break;
+			break;*/
 			
 		case STATE_PREP_RECV:
 			if(!bring_wifi_up(TUERSCHILD_WIFI_STATION, &conf)) {
@@ -65,11 +97,8 @@ void app_main(void)
 			}
 			break;
 		case STATE_PROCESS:
-			if(!process()) {
-				state = STATE_ERR;
-			} else {
-				state = STATE_DISPLAY;
-			}
+			process_and_show();
+			state = STATE_DISPLAY;
 			break;
 		case STATE_DISPLAY:
 			if(!display()) {
@@ -86,6 +115,7 @@ void app_main(void)
 			break;
 		
 		case STATE_PREP_CONFIG:
+			TUERSCHILD_LOGI(tag, "opening config interface");
 			if(!bring_wifi_up(TUERSCHILD_WIFI_AP, &conf)) {
 				state = STATE_ERR;
 			} else if(!start_recv_config(&conf)) {
@@ -131,14 +161,18 @@ void app_main(void)
 			time_from_sntp();
 			state = STATE_ENTER_SLEEP;
 		break;
+
+		case STATE_ERR:
+		TUERSCHILD_LOGE(tag, "OPERATION FEHLGESCHLAGEN, starte neu");
+		reboot();
+		break;
 		default:
 			state = STATE_ERR;
 			tuerschild_delay_ms(1000);
 			break;
 		}
 		TUERSCHILD_LOGI(tag, "state: %d", state);
-		tuerschild_delay_ms(1000);
-		//time_from_sntp();
+		tuerschild_delay_ms(10);
 		yield();
 	}
 }

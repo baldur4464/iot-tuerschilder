@@ -76,6 +76,10 @@ static const char page_before_ap_chan[] = "\"><br>"
                 
                 "<label for=\"lap_chan\">ap_chan:</label><br>"
                 "<input type=\"text\" id=\"lap_chan\" name=\"lap_chan\" inputmode=\"numeric\"value=\"";
+static const char page_before_ntp[] = "\"><br>"
+                
+                "<label for=\"lntp\">ntp:</label><br>"
+                "<input type=\"text\" id=\"lntp\" name=\"lntp\" value=\"";
 static const char page_end[] = "\"><br>"
 
                 "<button type=\"submit\">Einstellungen Speichern</button>"
@@ -105,12 +109,12 @@ static esp_err_t get_handler(httpd_req_t* request)
     TUERSCHILD_LOGI(tag, "server got \"GET\" request");
     //httpd_resp_send(request, request->user_ctx, HTTPD_RESP_USE_STRLEN);
     httpd_resp_sendstr_chunk(request, page_before_ssid);
-    if(old_conf->ssid) {
+    if(old_conf->ssid && strlen(old_conf->ssid)) {
         httpd_resp_sendstr_chunk(request, old_conf->ssid);
     }
 
     httpd_resp_sendstr_chunk(request, page_before_topic);
-    if(old_conf->topic) {
+    if(old_conf->topic && strlen(old_conf->topic)) {
         httpd_resp_sendstr_chunk(request, old_conf->topic);
     }
 
@@ -121,19 +125,23 @@ static esp_err_t get_handler(httpd_req_t* request)
     }
 
     httpd_resp_sendstr_chunk(request, page_before_broker);
-    if(old_conf->broker) {
+    if(old_conf->broker && strlen(old_conf->broker)) {
         httpd_resp_sendstr_chunk(request, old_conf->broker);
     }
 
     httpd_resp_sendstr_chunk(request, page_before_ap_ssid);
-    if(old_conf->ap_ssid) {
+    if(old_conf->ap_ssid && strlen(old_conf->ap_ssid)) {
         httpd_resp_sendstr_chunk(request, old_conf->ap_ssid);
     }
 
     httpd_resp_sendstr_chunk(request, page_before_ap_chan);
-    if(old_conf->port) {
+    if(old_conf->ap_channel) {
         snprintf(buf, 99, "%d", old_conf->ap_channel);
         httpd_resp_sendstr_chunk(request, buf);
+    }
+    httpd_resp_sendstr_chunk(request, page_before_ntp);
+    if(old_conf->ntp_server && strlen(old_conf->ntp_server)) {
+        httpd_resp_sendstr_chunk(request, old_conf->ntp_server);
     }
 
     httpd_resp_sendstr_chunk(request, page_end);
@@ -208,6 +216,9 @@ static esp_err_t post_handler(httpd_req_t* request)
         int ap_chan_len;
         char* ap_chan_str = get_string_in_post(ctx->content, "ap_chan=", &ap_chan_len);
 
+        int ntp_len;
+        char* ntp = get_string_in_post(ctx->content, "ntp=", &ntp_len);
+
         ssid[ssid_len] = 0;
         pass[pass_len] = 0;
         pass_conf[pass_conf_len] = 0;
@@ -218,6 +229,7 @@ static esp_err_t post_handler(httpd_req_t* request)
         ap_pass[ap_pass_len] = 0;
         ap_pass_conf[ap_pass_conf_len] = 0;
         ap_chan_str[ap_chan_len] = 0;
+        ntp[ntp_len] = 0;
         
         parse_url_encoded(ssid);
         parse_url_encoded(pass);
@@ -227,6 +239,7 @@ static esp_err_t post_handler(httpd_req_t* request)
         parse_url_encoded(ap_ssid);
         parse_url_encoded(ap_pass);
         parse_url_encoded(ap_pass_conf);
+        parse_url_encoded(ntp);
         
         
         //TUERSCHILD_LOGW(tag, "conf: %*s %*s %*s %*s ", ssid_len, ssid, pass_len, pass, broker_len, broker, topic_len, topic);
@@ -240,8 +253,8 @@ static esp_err_t post_handler(httpd_req_t* request)
             //tuerschild_config_t new_conf = {.broker = broker, .password = pass, .port = atoi(port), .ssid = ssid, .topic = topic};
             //*conf = new_conf;
             
-            if(pass_len && pass_conf_len && ap_pass_len && ap_pass_conf_len){
-              conf_set(conf, ssid, pass, broker, atoi(port_str), topic, ap_ssid, ap_pass, atoi(ap_chan_str));  
+            if(pass_len && pass_conf_len && ap_pass_len && ap_pass_conf_len && ntp_len){
+              conf_set(conf, ssid, pass, broker, atoi(port_str), topic, ap_ssid, ap_pass, atoi(ap_chan_str), ntp);  
             } else {
                 conf_set_ssid(conf, ssid);
                 conf_set_broker(conf, broker);
@@ -249,6 +262,7 @@ static esp_err_t post_handler(httpd_req_t* request)
                 conf_set_topic(conf, topic);
                 conf_set_ap_ssid(conf, ap_ssid);
                 conf_set_ap_chan(conf, atoi(ap_chan_str));
+                conf_set_ntp(conf, ntp);
                 if(pass_len && pass_conf) {
                     conf_set_pass(conf, pass);
                 }

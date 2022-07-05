@@ -5,14 +5,16 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "esp_system.h"
 #include "esp_check.h"
 #include "esp_event.h"
 #include "esp_sleep.h"
 #include "nvs_flash.h"
+#include "esp_task_wdt.h"
 
 #include "sntp.h"
 
-//#include "Arduino.h"
+#include "Arduino.h"
 
 static const char* tag= "tuerschild_esp32";
 
@@ -20,6 +22,13 @@ int early_init()
 {
 	int ret = 1;
 	esp_err_t error;
+
+	esp_task_wdt_init(150, false);
+	init_reset_btn();
+	//initArduino();
+
+//	setup_display();
+	
 	
 	error = nvs_flash_init();
 	if(error != ESP_OK) {
@@ -36,17 +45,30 @@ int early_init()
 	
 	return ret;
 }
-RTC_NOINIT_ATTR static int request = 1;
-int config_requested()
+RTC_NOINIT_ATTR static int request = 0;
+tuerschild_conf_request_t config_requested()
 {
-	//TODO implement
-	
-	TUERSCHILD_LOGW(tag, "using dummy function 'config_requested'");
-	if(request) {
-		request = 0;
-		return 1;
+	struct timeval start_press, end_press;
+	gettimeofday(&start_press, NULL);
+	int duration;
+	do {
+		
+		tuerschild_delay_ms(50);
+		gettimeofday(&end_press, NULL);
+		TUERSCHILD_LOGI(tag, "btn press is %d", reset_btn_pressed());
+		duration = end_press.tv_sec - start_press.tv_sec;
+	} while(reset_btn_pressed() && duration <=10);
+	TUERSCHILD_LOGI(tag, "press duration %d", duration);
+	if(duration >=10) {
+		TUERSCHILD_LOGI(tag, "full reset requested");
+		return TUERSCHILD_CONF_REQUEST_RESET;
+	} else if(duration >= 5){
+		TUERSCHILD_LOGI(tag, "config interface reqeuested");
+		return TUERSCHILD_CONF_REQUEST_SIMPLE;
+	} else {
+		TUERSCHILD_LOGI(tag, "no config requested");
+		return TUERSCHILD_CONF_REQUEST_NONE;
 	}
-	return 0;
 }
 
 int valid_config()
@@ -93,7 +115,7 @@ void enter_sleep()
 	//struct timeval time;
 	//gettimeofday(&time, NULL);
 	//TUERSCHILD_LOGW(tag, "enter sleep at epoch: %ld.%06ld", time.tv_sec, time.tv_usec);
-	esp_deep_sleep(10*1000000);
+	esp_deep_sleep(15*60*1000000 - esp_timer_get_time());
 }
 
 int process()
@@ -103,18 +125,30 @@ int process()
 	return 1;
 }
 
-int dummy_conf()
+int factory_settings()
 {
-	//TODO implement
 
-#warning hardcoded config
 
-#include "dummy_conf.inc"
+
+	const tuerschild_config_t factory_conf  = {
+		.ssid = "SSID",
+		.password = "password",
+		.broker = "broker_hostname",
+		.port = 1883,
+		
+		.topic = "raum/5",
+
+		
+		.ap_ssid = "Tueschild Einrichtung",
+		.ap_password = "01234567",
+		.ap_channel = 6,
+		.ntp_server = "pool.ntp.org"
+	};
+
+
+	TUERSCHILD_LOGW(tag, "factrory settings");
 	
-
-	TUERSCHILD_LOGW(tag, "writing dummy config");
-	
-	return store_configuration(&dummy_conf);
+	return store_configuration(&factory_conf);
 }
 
 void time_from_sntp()
@@ -135,4 +169,9 @@ void time_from_sntp()
 	}
 	gettimeofday(&time, NULL);
 	TUERSCHILD_LOGW(tag, "epoch after sync: %ld.%06ld", time.tv_sec, time.tv_usec);
+}
+
+void reboot() 
+{
+	esp_restart();
 }

@@ -60,6 +60,9 @@ int store_configuration(tuerschild_config_t* conf)
 	error = nvs_set_u16(nvs_handle, "ap_chan", conf->ap_channel);
 	ret = ret && error == ESP_OK;
 	
+	error = nvs_set_str(nvs_handle, "ntp", conf->ntp_server);
+	ret = ret && error == ESP_OK;
+	
 	if(!ret) {
 		TUERSCHILD_LOGE(tag, "failed at writing");
 		nvs_close(nvs_handle);
@@ -85,9 +88,9 @@ int read_conf_from_nvs(tuerschild_config_t* conf)
 	uint16_t port;
 	uint8_t chan;
 	
-	error = nvs_open("config", NVS_READONLY, &nvs_handle);
+	error = nvs_open("config", NVS_READWRITE, &nvs_handle);
 	if(error != ESP_OK) {
-		TUERSCHILD_LOGE(tag, "failed to open nvs memory for reading");
+		TUERSCHILD_LOGE(tag, "failed to open nvs memory for reading, error %d", error);
 		nvs_close(nvs_handle);
 		return 0;
 	}
@@ -171,6 +174,16 @@ int read_conf_from_nvs(tuerschild_config_t* conf)
 		return 0;
 	}
 	conf_set_ap_chan(conf, chan);
+
+	length = sizeof(buf);
+	error = nvs_get_str(nvs_handle, "ntp", buf, &length);
+	if(error != ESP_OK) {
+		TUERSCHILD_LOGE(tag, "failed to read");
+		nvs_close(nvs_handle);
+		set_empty_conf(conf);
+		return 0;
+	}
+	conf_set_ntp(conf, buf);
 
 
 	nvs_close(nvs_handle);
