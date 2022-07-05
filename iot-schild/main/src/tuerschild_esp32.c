@@ -12,7 +12,7 @@
 
 #include "sntp.h"
 
-//#include "Arduino.h"
+#include "Arduino.h"
 
 static const char* tag= "tuerschild_esp32";
 
@@ -20,6 +20,9 @@ int early_init()
 {
 	int ret = 1;
 	esp_err_t error;
+
+	//initArduino();
+	
 	
 	error = nvs_flash_init();
 	if(error != ESP_OK) {

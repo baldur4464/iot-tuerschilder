@@ -1,5 +1,4 @@
 build/
 main/dummy_conf.inc
-components/
 partition_table/
 sdkconfig.old

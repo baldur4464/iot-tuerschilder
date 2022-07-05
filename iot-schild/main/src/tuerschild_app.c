@@ -65,11 +65,7 @@ void app_main(void)
 			}
 			break;
 		case STATE_PROCESS:
-			if(!process()) {
-				state = STATE_ERR;
-			} else {
-				state = STATE_DISPLAY;
-			}
+			process_and_show();
 			break;
 		case STATE_DISPLAY:
 			if(!display()) {

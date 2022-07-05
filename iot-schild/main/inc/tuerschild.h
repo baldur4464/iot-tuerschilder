@@ -29,10 +29,10 @@ typedef struct tuerschild_config
 #define TOPIC_IN_MAX_LEN 128
 #define DATA_IN_MAX_LEN 1024
 
-extern volatile int topic_in_len;
-extern volatile int data_in_len;
-extern volatile char topic_in_buf[TOPIC_IN_MAX_LEN];
-extern volatile char data_in_buf[DATA_IN_MAX_LEN];
+extern int topic_in_len;
+extern int data_in_len;
+extern char topic_in_buf[TOPIC_IN_MAX_LEN];
+extern char data_in_buf[DATA_IN_MAX_LEN];
 
 int early_init();
 int config_requested();
@@ -69,5 +69,12 @@ int process();
 int done_recv_conf();
 void tuerschild_delay_ms(int x);
 
+
+
+
+void setup_display();
+void process_and_show();
+
 void time_from_sntp();
+
 #endif

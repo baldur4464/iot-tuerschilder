@@ -102,7 +102,6 @@ static void event_handler_wifi(void* arg, esp_event_base_t base, int32_t event_i
 static void event_handler_ip(void* arg, esp_event_base_t base, int32_t event_id, void* event_data) {
 	switch(event_id) {
 		case IP_EVENT_STA_GOT_IP:
-			puts("got ip");
 			fflush(stdout);
 			xEventGroupSetBits(wifi_events, CONNECTED_BIT);
 			break;

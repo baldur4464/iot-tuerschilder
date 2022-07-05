@@ -85,9 +85,9 @@ int read_conf_from_nvs(tuerschild_config_t* conf)
 	uint16_t port;
 	uint8_t chan;
 	
-	error = nvs_open("config", NVS_READONLY, &nvs_handle);
+	error = nvs_open("config", NVS_READWRITE, &nvs_handle);
 	if(error != ESP_OK) {
-		TUERSCHILD_LOGE(tag, "failed to open nvs memory for reading");
+		TUERSCHILD_LOGE(tag, "failed to open nvs memory for reading, error %d", error);
 		nvs_close(nvs_handle);
 		return 0;
 	}
