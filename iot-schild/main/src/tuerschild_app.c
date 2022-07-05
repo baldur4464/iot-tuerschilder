@@ -33,8 +33,18 @@ void app_main(void)
 			break;
 			
 		case STATE_GET_CONF:
-			if(!read_conf_from_nvs(&conf) || config_requested()) {
-				//dummy_conf();
+			if(!read_conf_from_nvs(&conf) ) {
+				TUERSCHILD_LOGI(tag, "conf not read");
+				dummy_conf();
+				if(read_conf_from_nvs(&conf)){
+					TUERSCHILD_LOGE(tag, "can't read config I just wrote");
+					state = STATE_PREP_CONFIG;	
+				}else{
+					state = STATE_ERR;
+				}
+				
+			} else if( config_requested()) {
+				TUERSCHILD_LOGI(tag, "conf requested");
 				state = STATE_PREP_CONFIG;
 			} else {
 				state = STATE_PREP_RECV;
@@ -82,6 +92,7 @@ void app_main(void)
 			break;
 		
 		case STATE_PREP_CONFIG:
+			TUERSCHILD_LOGI(tag, "opening config interface");
 			if(!bring_wifi_up(TUERSCHILD_WIFI_AP, &conf)) {
 				state = STATE_ERR;
 			} else if(!start_recv_config(&conf)) {
