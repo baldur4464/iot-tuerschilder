@@ -161,14 +161,18 @@ void app_main(void)
 			time_from_sntp();
 			state = STATE_ENTER_SLEEP;
 		break;
+
+		case STATE_ERR:
+		TUERSCHILD_LOGE(tag, "OPERATION FEHLGESCHLAGEN, starte neu");
+		reboot();
+		break;
 		default:
 			state = STATE_ERR;
 			tuerschild_delay_ms(1000);
 			break;
 		}
 		TUERSCHILD_LOGI(tag, "state: %d", state);
-		tuerschild_delay_ms(1000);
-		//time_from_sntp();
+		tuerschild_delay_ms(10);
 		yield();
 	}
 }

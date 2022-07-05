@@ -5,6 +5,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+#include "esp_system.h"
 #include "esp_check.h"
 #include "esp_event.h"
 #include "esp_sleep.h"
@@ -114,7 +115,7 @@ void enter_sleep()
 	//struct timeval time;
 	//gettimeofday(&time, NULL);
 	//TUERSCHILD_LOGW(tag, "enter sleep at epoch: %ld.%06ld", time.tv_sec, time.tv_usec);
-	esp_deep_sleep(10*1000000);
+	esp_deep_sleep(15*60*1000000 - esp_timer_get_time());
 }
 
 int process()
@@ -168,4 +169,9 @@ void time_from_sntp()
 	}
 	gettimeofday(&time, NULL);
 	TUERSCHILD_LOGW(tag, "epoch after sync: %ld.%06ld", time.tv_sec, time.tv_usec);
+}
+
+void reboot() 
+{
+	esp_restart();
 }

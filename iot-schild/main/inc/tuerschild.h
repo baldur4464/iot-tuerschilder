@@ -89,4 +89,6 @@ void process_and_show();
 
 void time_from_sntp();
 
+void reboot();
+
 #endif
