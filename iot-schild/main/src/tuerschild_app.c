@@ -2,7 +2,7 @@
 
 
 
-const char* tag = "tuerschild application";
+static const char* tag = "tuerschild application";
 
 #warning dummy state
 typedef enum state
@@ -76,6 +76,7 @@ void app_main(void)
 			break;
 		case STATE_PROCESS:
 			process_and_show();
+			state = STATE_DISPLAY;
 			break;
 		case STATE_DISPLAY:
 			if(!display()) {

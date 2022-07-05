@@ -9,6 +9,7 @@
 #include "esp_event.h"
 #include "esp_sleep.h"
 #include "nvs_flash.h"
+#include "esp_task_wdt.h"
 
 #include "sntp.h"
 
@@ -21,7 +22,9 @@ int early_init()
 	int ret = 1;
 	esp_err_t error;
 
-	//initArduino();
+	esp_task_wdt_init(150, false);
+	initArduino();
+	setup_display();
 	
 	
 	error = nvs_flash_init();
@@ -39,11 +42,11 @@ int early_init()
 	
 	return ret;
 }
-RTC_NOINIT_ATTR static int request = 1;
+RTC_NOINIT_ATTR static int request = 0;
 int config_requested()
 {
 	//TODO implement
-	
+	request = 0;
 	TUERSCHILD_LOGW(tag, "using dummy function 'config_requested'");
 	if(request) {
 		request = 0;

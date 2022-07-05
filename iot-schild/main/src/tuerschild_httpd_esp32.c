@@ -105,12 +105,12 @@ static esp_err_t get_handler(httpd_req_t* request)
     TUERSCHILD_LOGI(tag, "server got \"GET\" request");
     //httpd_resp_send(request, request->user_ctx, HTTPD_RESP_USE_STRLEN);
     httpd_resp_sendstr_chunk(request, page_before_ssid);
-    if(old_conf->ssid) {
+    if(old_conf->ssid && strlen(old_conf->ssid)) {
         httpd_resp_sendstr_chunk(request, old_conf->ssid);
     }
 
     httpd_resp_sendstr_chunk(request, page_before_topic);
-    if(old_conf->topic) {
+    if(old_conf->topic && strlen(old_conf->topic)) {
         httpd_resp_sendstr_chunk(request, old_conf->topic);
     }
 
@@ -121,17 +121,17 @@ static esp_err_t get_handler(httpd_req_t* request)
     }
 
     httpd_resp_sendstr_chunk(request, page_before_broker);
-    if(old_conf->broker) {
+    if(old_conf->broker && strlen(old_conf->broker)) {
         httpd_resp_sendstr_chunk(request, old_conf->broker);
     }
 
     httpd_resp_sendstr_chunk(request, page_before_ap_ssid);
-    if(old_conf->ap_ssid) {
+    if(old_conf->ap_ssid && strlen(old_conf->ap_ssid)) {
         httpd_resp_sendstr_chunk(request, old_conf->ap_ssid);
     }
 
     httpd_resp_sendstr_chunk(request, page_before_ap_chan);
-    if(old_conf->port) {
+    if(old_conf->ap_channel) {
         snprintf(buf, 99, "%d", old_conf->ap_channel);
         httpd_resp_sendstr_chunk(request, buf);
     }
