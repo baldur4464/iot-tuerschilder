@@ -19,7 +19,7 @@ void app_main(void)
 	
 	tuerschild_config_t conf;
 
-	
+	tuerschild_conf_request_t conf_request;
 	while(1) {
 		switch(state) {
 			
@@ -29,11 +29,33 @@ void app_main(void)
 			} else {
 				init_empty_conf(&conf);
 				state = STATE_GET_CONF;
+				conf_request = config_requested();
 			}
+			
 			break;
 			
 		case STATE_GET_CONF:
-			if(!read_conf_from_nvs(&conf) ) {
+			if(conf_request == TUERSCHILD_CONF_REQUEST_RESET) {
+				TUERSCHILD_LOGI(tag, "doiing full reset");
+				factory_settings();
+				read_conf_from_nvs(&conf);
+				state = STATE_PREP_CONFIG;
+			} else if(conf_request == TUERSCHILD_CONF_REQUEST_SIMPLE) {
+				TUERSCHILD_LOGI(tag, "bring config interface up");
+				if(read_conf_from_nvs(&conf)) {
+					state = STATE_PREP_CONFIG;
+				} else {
+					state = STATE_ERR;
+				}
+			} else if(read_conf_from_nvs(&conf)) {
+				TUERSCHILD_LOGI(tag, "proceed to reception");
+				state = STATE_PREP_RECV;
+			} else {
+				state = STATE_ERR;
+			}
+			conf_request = TUERSCHILD_CONF_REQUEST_NONE;
+			break;
+			/*if(!read_conf_from_nvs(&conf) ) {
 				TUERSCHILD_LOGI(tag, "conf not read");
 				dummy_conf();
 				if(read_conf_from_nvs(&conf)){
@@ -49,7 +71,7 @@ void app_main(void)
 			} else {
 				state = STATE_PREP_RECV;
 			}
-			break;
+			break;*/
 			
 		case STATE_PREP_RECV:
 			if(!bring_wifi_up(TUERSCHILD_WIFI_STATION, &conf)) {

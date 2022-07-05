@@ -11,14 +11,21 @@ extern "C" {
 
 extern "C" void setup_display()
 {
-    DEV_Module_Init();
+    /*DEV_Module_Init();
     EPD_7IN5_V2_Init();
-    EPD_7IN5_V2_Clear();
+    EPD_7IN5_V2_Clear();*/
     
 }
 
 extern "C" void process_and_show()
 {
+    initArduino();
+
+    DEV_Module_Init();
+    EPD_7IN5_V2_Init();
+    EPD_7IN5_V2_Clear();
+
+
     char* json = data_in_buf;
     UWORD Imagesize = ((EPD_7IN5_V2_WIDTH % 8 == 0) ? (EPD_7IN5_V2_WIDTH / 8) : (EPD_7IN5_V2_WIDTH / 8 + 1)) * EPD_7IN5_V2_HEIGHT;
     uint8_t* BlackImage = (UBYTE *)malloc(Imagesize);

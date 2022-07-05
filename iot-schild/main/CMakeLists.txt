@@ -17,6 +17,7 @@ idf_component_register(SRCS "src/tuerschild_app.c"
 					"src/esp32_eink_driver/GUI_Paint.cpp"
 					"src/esp32_eink_driver/utility/EPD_7in5_V2.cpp"
 					"src/esp32_eink_driver/utility/DEV_Config.cpp"
+					"src/tuerschild_btn_esp32.c"
                     INCLUDE_DIRS "./inc" "." "./src/esp32_eink_driver")
 
 

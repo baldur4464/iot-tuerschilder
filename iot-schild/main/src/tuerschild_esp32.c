@@ -23,8 +23,10 @@ int early_init()
 	esp_err_t error;
 
 	esp_task_wdt_init(150, false);
-	initArduino();
-	setup_display();
+	init_reset_btn();
+	//initArduino();
+
+//	setup_display();
 	
 	
 	error = nvs_flash_init();
@@ -43,16 +45,29 @@ int early_init()
 	return ret;
 }
 RTC_NOINIT_ATTR static int request = 0;
-int config_requested()
+tuerschild_conf_request_t config_requested()
 {
-	//TODO implement
-	request = 0;
-	TUERSCHILD_LOGW(tag, "using dummy function 'config_requested'");
-	if(request) {
-		request = 0;
-		return 1;
+	struct timeval start_press, end_press;
+	gettimeofday(&start_press, NULL);
+	int duration;
+	do {
+		
+		tuerschild_delay_ms(50);
+		gettimeofday(&end_press, NULL);
+		TUERSCHILD_LOGI(tag, "btn press is %d", reset_btn_pressed());
+		duration = end_press.tv_sec - start_press.tv_sec;
+	} while(reset_btn_pressed() && duration <=10);
+	TUERSCHILD_LOGI(tag, "press duration %d", duration);
+	if(duration >=10) {
+		TUERSCHILD_LOGI(tag, "full reset requested");
+		return TUERSCHILD_CONF_REQUEST_RESET;
+	} else if(duration >= 5){
+		TUERSCHILD_LOGI(tag, "config interface reqeuested");
+		return TUERSCHILD_CONF_REQUEST_SIMPLE;
+	} else {
+		TUERSCHILD_LOGI(tag, "no config requested");
+		return TUERSCHILD_CONF_REQUEST_NONE;
 	}
-	return 0;
 }
 
 int valid_config()
@@ -109,18 +124,30 @@ int process()
 	return 1;
 }
 
-int dummy_conf()
+int factory_settings()
 {
-	//TODO implement
 
-#warning hardcoded config
 
-#include "dummy_conf.inc"
+
+	const tuerschild_config_t factory_conf  = {
+		.ssid = "SSID",
+		.password = "password",
+		.broker = "broker_hostname",
+		.port = 1883,
+		
+		.topic = "raum/5",
+
+		
+		.ap_ssid = "Tueschild Einrichtung",
+		.ap_password = "01234567",
+		.ap_channel = 6,
+		.ntp_server = "pool.ntp.org"
+	};
+
+
+	TUERSCHILD_LOGW(tag, "factrory settings");
 	
-
-	TUERSCHILD_LOGW(tag, "writing dummy config");
-	
-	return store_configuration(&dummy_conf);
+	return store_configuration(&factory_conf);
 }
 
 void time_from_sntp()
