@@ -6,8 +6,9 @@ static tuerschild_config_t dummy_conf  = {
 	
 	.topic = "raum/5",
 
-
+	
 	.ap_ssid = "Tueschild Einrichtung",
 	.ap_password = "01234567",
-	.ap_channel = 6
+	.ap_channel = 6,
+	.ntp_server = "pool.ntp.org"
 };

@@ -17,8 +17,15 @@ void init_empty_conf(tuerschild_config_t* conf)
     conf->topic  = NULL;
     conf->ap_ssid = NULL;
     conf->ap_password = NULL;
+    conf->ntp_server = NULL;
 }
-
+void conf_set_ntp(tuerschild_config_t* conf, const char* ntp)
+{
+    if(conf->ntp_server) {
+        free(conf->ntp_server);
+    }
+    conf->ntp_server = strdup(ntp);
+}
 void conf_set_ssid(tuerschild_config_t* conf, const char* ssid)
 {
     if(conf->ssid) {
@@ -86,7 +93,7 @@ void conf_set_ap_chan(tuerschild_config_t* conf, const uint8_t chan)
     
 }
 
-void conf_set(tuerschild_config_t* conf, const char* ssid, const char* password, const char* broker, uint16_t port, const char* topic, const char* ap_ssid, const char* ap_pass, uint8_t ap_chan)
+void conf_set(tuerschild_config_t* conf, const char* ssid, const char* password, const char* broker, uint16_t port, const char* topic, const char* ap_ssid, const char* ap_pass, uint8_t ap_chan, const char* ntp)
 {
     conf_set_ssid(conf, ssid);
     conf_set_pass(conf, password);
@@ -96,6 +103,7 @@ void conf_set(tuerschild_config_t* conf, const char* ssid, const char* password,
     conf_set_ap_ssid(conf, ap_ssid);
     conf_set_ap_pass(conf, ap_pass);
     conf_set_ap_chan(conf, ap_chan);
+    conf_set_ntp(conf, ntp);
 }
 
 void set_empty_conf(tuerschild_config_t *conf)
@@ -118,4 +126,8 @@ void set_empty_conf(tuerschild_config_t *conf)
     if(conf->ap_password) {
         free(conf->ap_password);
     }
+    if(conf->ntp_server) {
+        free(conf->ntp_server);
+    }
+    init_empty_conf(conf);
 }

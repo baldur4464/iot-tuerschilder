@@ -47,7 +47,9 @@ extern "C" void process_and_show()
     TUERSCHILD_LOGI(tag, "wrote last udpate date");
     Paint_DrawString_EN(700, 20, doc["systeminfo"]["updateUhrzeit"], &Font20, BLACK, WHITE);
     TUERSCHILD_LOGI(tag, "wrote uddate time");
-    Paint_DrawString_EN(30, 70, doc["aktuellesMeeting"]["titel"], &Font24, WHITE, BLACK);
+    if(doc["aktuellesMeeting"]["titel"]) {
+        Paint_DrawString_EN(30, 70, doc["aktuellesMeeting"]["titel"], &Font24, WHITE, BLACK);
+    }
     TUERSCHILD_LOGI(tag, "wrote current meeting");
     //Paint_DrawString_EN(30, 110, "Meeting: Abschlussvortrag IoT Tuerschild", &Font16, WHITE, BLACK);
 

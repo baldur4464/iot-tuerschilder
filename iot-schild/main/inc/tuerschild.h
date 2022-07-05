@@ -24,6 +24,8 @@ typedef struct tuerschild_config
 	char* ap_ssid;
 	char* ap_password;
 	uint8_t ap_channel;
+	//ntp
+	char* ntp_server;
 } tuerschild_config_t;
 
 #define TOPIC_IN_MAX_LEN 128
@@ -38,7 +40,8 @@ int early_init();
 int config_requested();
 
 void init_empty_conf(tuerschild_config_t* conf);
-void conf_set(tuerschild_config_t* conf, const char* ssid, const char* password, const char* broker, uint16_t port, const char* topic, const char* ap_ssid, const char* ap_pass, uint8_t ap_chan);
+void conf_set(tuerschild_config_t* conf, const char* ssid, const char* password, const char* broker, uint16_t port, const char* topic, const char* ap_ssid, const char* ap_pass, uint8_t ap_chan, const char* ntp);
+void conf_set_ntp(tuerschild_config_t* conf, const char* ntp);
 void conf_set_ssid(tuerschild_config_t* conf, const char* ssid);
 void conf_set_pass(tuerschild_config_t* conf, const char* password);
 void conf_set_broker(tuerschild_config_t* conf, const char* broker);

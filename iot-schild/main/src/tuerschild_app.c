@@ -37,9 +37,9 @@ void app_main(void)
 				TUERSCHILD_LOGI(tag, "conf not read");
 				dummy_conf();
 				if(read_conf_from_nvs(&conf)){
-					TUERSCHILD_LOGE(tag, "can't read config I just wrote");
 					state = STATE_PREP_CONFIG;	
 				}else{
+					TUERSCHILD_LOGE(tag, "can't read config I just wrote");
 					state = STATE_ERR;
 				}
 				
