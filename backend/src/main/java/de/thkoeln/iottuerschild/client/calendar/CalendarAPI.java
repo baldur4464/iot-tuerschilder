@@ -174,11 +174,19 @@ public class CalendarAPI implements Runnable{
 
             //Wenn es einen Raum nicht in der Datenbank existiert, wird keine Buchung erstellt.
             if(db.getRaumByName(event.getLocation()) != null) {
+                String summary = "";
+                if(event.getSummary() != null) {
+                    summary = event.getSummary();
+                } else {
+                    summary = "Meeting";
+                }
+
                 //Wenn ein Event zwischen Start und Endzeitpunkt exisiert wird Buchung mit Aktuelles Meeting True erstellt ansonsten mit False
                 if (event.getStart().getDateTime().getValue() <= now.getValue() && event.getEnd().getDateTime().getValue() >= now.getValue()) {
-                    buchung = new Nachricht(event.getSummary(), uhrzeit, event.getCreator().getEmail(), true, db.getRaumByName(event.getLocation()));
+                    buchung = new Nachricht(summary, uhrzeit, event.getCreator().getEmail(), true, db.getRaumByName(event.getLocation()));
                 } else {
-                    buchung = new Nachricht(event.getSummary(), uhrzeit, "", false, db.getRaumByName(event.getLocation()));
+                    System.out.println(event.getSummary() != null);
+                    buchung = new Nachricht(summary, uhrzeit, "", false, db.getRaumByName(event.getLocation()));
                 }
                 buchungen.add(buchung);
             }
