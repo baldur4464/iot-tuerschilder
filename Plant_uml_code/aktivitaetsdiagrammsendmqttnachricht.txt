@@ -1,0 +1,43 @@
+@startuml
+start
+  :SendMQTTNachricht();
+  :Hole Räume von DB mit db.getRaeume();
+  :Hole Events mit getEvents();
+  repeat :Für jedes Event;
+    if(Titel im Kalender eingetragen) then (yes)
+      :Übernehme Titel aus dem Kalender;
+    else (no)
+      :Ersetze den Titel mit "Meeting";
+    endif
+    if(Abfragezeitpunkt ist zwischen Start und Endzeitpunkt) then (yes)
+      :Erstelle Nachricht als aktuelles Meeting;
+    else (no)
+      :Erstelle Nachricht als nicht aktuelles Meeting;
+    endif
+  repeat while (Mehr Events?)
+  repeat :Für jeden Raum;
+    repeat:Für jede Nachricht;
+      if(Raum in Nachricht gleich dem Raum) then (yes)
+        :Sortiere Nachricht nach Raum;
+      else (no)
+      endif
+    repeat while (Mehr Nachrichten?)
+    switch(Anzahl der Nachrichten)
+      case (0)
+        :erstellenachrichtohneEvent();
+      case (1)
+        :erstellenachrichteinEvent();
+      case (2)
+        :erstellenachrichtzweiEvent();
+      case (3)
+        :erstellenachrichtdreiEvent();
+      case (4)
+        :erstellenachrichtvierEvent();
+      case (default)
+        :erstelleNachrichtmehrEvents();
+    endswitch
+    :Publish Nachricht;
+  repeat while (Mehr Räume?)  
+  stop 
+
+@enduml
