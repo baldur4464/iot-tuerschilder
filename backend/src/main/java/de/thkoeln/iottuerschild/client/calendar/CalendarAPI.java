@@ -185,7 +185,6 @@ public class CalendarAPI implements Runnable{
                 if (event.getStart().getDateTime().getValue() <= now.getValue() && event.getEnd().getDateTime().getValue() >= now.getValue()) {
                     buchung = new Nachricht(summary, uhrzeit, event.getCreator().getEmail(), true, db.getRaumByName(event.getLocation()));
                 } else {
-                    System.out.println(event.getSummary() != null);
                     buchung = new Nachricht(summary, uhrzeit, "", false, db.getRaumByName(event.getLocation()));
                 }
                 buchungen.add(buchung);
