@@ -1,0 +1,42 @@
+@startuml
+left to right direction
+actor Nutzer as u
+package Database {
+  usecase "Erstelle Raum" as F01
+  usecase "Lösche Raum" as F02
+  usecase "Zeige Räume an" as F03
+  usecase "Übergebe alle Räume" as F04
+}
+
+package Kalender {
+  usecase "Erstelle Termin" as F05
+}
+
+package CalendarAPI {
+  usecase "Erstelle MQTTNachricht" as F06
+}
+
+package MQTTBroker {
+  usecase "Empfange MQTTNachrichten" as F07
+  usecase "Sende MQTTNachrichten" as F08
+}
+
+package IoTürschild {
+  usecase "Richte Gerät ein" as F09
+  usecase "Empfange MQTT Nachricht" as F10
+  usecase "Zeige Meetings im Display" as F11
+}
+
+
+u --> F01
+u --> F02
+u --> F03
+u --> F05
+F04 --> F06
+F05 --> F06
+F06 --> F07
+F07 --> F08
+u --> F09
+F08 --> F10
+F10 --> F11
+@enduml
