@@ -90,7 +90,7 @@ void app_main(void)
 				state = STATE_ERR;
 				TUERSCHILD_LOGE(tag, "mqtt error");
 			} else if(mqtt_recv_success()) {
-				state = STATE_DISPLAY;
+				state = STATE_PROCESS;
 			} else if(mqtt_recv_timeout()) {
 				state =  STATE_ERR;
 				TUERSCHILD_LOGE(tag, "mqtt timeout");
@@ -101,16 +101,12 @@ void app_main(void)
 			state = STATE_DISPLAY;
 			break;
 		case STATE_DISPLAY:
-			display();
-			process_and_show();
-			
-			state = STATE_ENTER_SLEEP;
-			/*if(!display()) {
+			if(!display()) {
 				state = STATE_ERR;
 			} else {
 				state = STATE_ENTER_SLEEP;
 				//state = STATE_RESERVED;
-			}*/
+			}
 			
 			break;
 			
