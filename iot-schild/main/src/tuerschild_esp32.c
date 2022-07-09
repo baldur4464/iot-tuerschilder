@@ -23,7 +23,7 @@ int early_init()
 	int ret = 1;
 	esp_err_t error;
 
-	esp_task_wdt_init(150, false);
+	esp_task_wdt_init(150, true); //actually do panic after 150 seconds
 	init_reset_btn();
 	//initArduino();
 
