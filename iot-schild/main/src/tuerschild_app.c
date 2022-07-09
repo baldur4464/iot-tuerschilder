@@ -19,4 +19,9 @@ void app_main(void)
 	strcpy(topic_in_buf, topic);
 	strcpy(data_in_buf, json);
 	process_and_show();
+	
+	TUERSCHILD_LOGI(tag, "tests done");
+	while(1) {
+		yield();
+	}
 }
