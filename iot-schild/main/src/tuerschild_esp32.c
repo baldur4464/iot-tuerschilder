@@ -173,5 +173,6 @@ void time_from_sntp()
 
 void reboot() 
 {
+	TUERSCHILD_LOGI(tag, "rebooting, free heap was always at least: %d bytes", esp_get_minimum_free_heap_size());
 	esp_restart();
-}
+} 
