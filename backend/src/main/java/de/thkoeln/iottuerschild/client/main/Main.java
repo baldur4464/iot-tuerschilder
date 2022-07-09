@@ -5,7 +5,6 @@ import de.thkoeln.iottuerschild.client.calendar.CalendarAPI;
 import de.thkoeln.iottuerschild.client.database.Database;
 import de.thkoeln.iottuerschild.client.menu.Menu;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
