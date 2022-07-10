@@ -1,3 +1,16 @@
+/*********************************************
+ * component for writing configuration to nvs and reading configration from nvs
+ * uses functions from tuerschild_conf, fields in nvs are kept variable length
+ * data format:
+ * 	ssid : n*uint8_t
+ * 	pass : n*uint8_t
+ * 	host : n*uint8_t
+ * 	port : uint16_t
+ * 	topic : n*uint8_t
+ * store_configuration	saves given configuration to nvs partition
+ * read_conf_from_nvs	reads from nvs partition into given configuration
+ *********************************************/
+
 #include "tuerschild.h"
 
 #include <memory.h>
@@ -7,19 +20,6 @@
 
 static const char* tag = "tuerschild_storage_esp32";
 
-#define SSID_OVERLEN 33
-#define PASS_OVERLEN 65
-#define HOSTNAME_OVERLEN 254
-#define TOPIC_OVERLEN (TOPIC_IN_MAX_LEN+1)
-
-/*********************************************
- * data format:
- * 	ssid : n*uint8_t
- * 	pass : n*uint8_t
- * 	host : n*uint8_t
- * 	port : uint16_t
- * 	topic : n*uint8_t
- *********************************************/
 
 
 int store_configuration(tuerschild_config_t* conf)
@@ -36,6 +36,7 @@ int store_configuration(tuerschild_config_t* conf)
 		return 0;
 	}
 	
+	//store all fields
 	error = nvs_set_str(nvs_handle, "ssid", conf->ssid);
 	ret = ret && error == ESP_OK;
 	
@@ -68,7 +69,8 @@ int store_configuration(tuerschild_config_t* conf)
 		nvs_close(nvs_handle);
 		return 0;
 	}
-	error = nvs_commit(nvs_handle);
+	
+	error = nvs_commit(nvs_handle);	//finish transaction
 	nvs_close(nvs_handle);
 	if(error != ESP_OK) {
 		TUERSCHILD_LOGE(tag, "commit to memory failed");
@@ -84,7 +86,7 @@ int read_conf_from_nvs(tuerschild_config_t* conf)
 	
 	size_t length;
 	
-	char buf[512];
+	char buf[512];//buffer fo reading
 	uint16_t port;
 	uint8_t chan;
 	
@@ -95,6 +97,7 @@ int read_conf_from_nvs(tuerschild_config_t* conf)
 		return 0;
 	}
 	
+	//read all fields
 	length = sizeof(buf);
 	error = nvs_get_str(nvs_handle, "ssid", buf, &length);
 	if(error != ESP_OK) {

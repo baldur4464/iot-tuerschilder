@@ -1,3 +1,13 @@
+/*********************************************************
+ * component receiving messages over mqtt
+ *  event_handler_mqtt		called, on mqtt actions, listens for relevant events, and receives the message
+ *  bring_mqtt_client_up	starts an mqtt client and connects to the broker set in the given configuration
+ *  start_mqtt_receive   	subscribes to the topic in the given configuration
+ *  mqtt_recv_success    	true if mqtt message was received, false if still waiting
+ *  mqtt_recv_timeout 		returns true if wating more than 10 seconds for a mqtt emssage
+ *	mqtt_error				returns true if an error occured
+ ********************************************************/
+
 #include "tuerschild.h"
 
 #include "time.h"
@@ -9,6 +19,8 @@
 
 static const char* tag = "tuerschild_mqtt_esp32";
 
+
+//internal events
 #define MQTT_UP_BIT (1<<13)
 #define MQTT_SUBSCRIBED_BIT (1<<14)
 #define MQTT_RECV_SUCCESS (1)
@@ -31,17 +43,18 @@ static void event_handler_mqtt(void* arg, esp_event_base_t base, int32_t event_i
 		case MQTT_EVENT_DATA:
 			
 			if(event->topic_len > TOPIC_IN_MAX_LEN || event->total_data_len > DATA_IN_MAX_LEN) {
-				TUERSCHILD_LOGE(tag, "unsupported data length");
+				TUERSCHILD_LOGE(tag, "unsupported data length");			//message too large
 				xEventGroupSetBits(mqtt_events, MQTT_ERROR_BIT);
-			} else if(event->data_len != event->total_data_len) {
+			} else if(event->data_len != event->total_data_len) {			//segmentation ios not implemented yet
 				TUERSCHILD_LOGE(tag, "segmented data not yet supported");
 				xEventGroupSetBits(mqtt_events, MQTT_ERROR_BIT);
 			} else {
-				#warning no mutex, datarace
+				//copy to global buffers
 				topic_in_len = event->topic_len;
 				data_in_len = event->data_len;
 				memcpy(topic_in_buf, event->topic, topic_in_len);
 				memcpy(data_in_buf, event->data, data_in_len);
+				//null terminate
 				data_in_buf[data_in_len] = 0;
 				topic_in_buf[topic_in_len] = 0;
 				xEventGroupSetBits(mqtt_events, MQTT_RECV_SUCCESS);

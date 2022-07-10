@@ -1,3 +1,11 @@
+/*********************************************************
+ * structure to hold configuration, not platform dependent
+ *  set functions       set new value, stringsd are duplicated, previous strings are freed, must not use on configuration with value strings in static memory
+ *  init_empty_conf     call this to initialise all values as empty,  without deallocating old strings, i.e. after creating an uninitialized object
+ *  create_empty_conf   allocates empty and null-initialized object, before freeing the object, use set_empty_conf to free the strings of the properties 
+ *  set_empty_conf      sets all properties to null, frees them if necessary, don't call, if properties are static
+ ********************************************************/
+
 #include "tuerschild.h"
 #include <string.h>
 tuerschild_config_t* create_empty_conf()

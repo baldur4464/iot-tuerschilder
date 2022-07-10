@@ -1,7 +1,41 @@
 #ifndef TUERSCHILD_H
 #define TUERSCHILD_H
-
+/**********************************
+ * definition of common types, declaration of common functions, and declaration of gloval buffers, see tuerschild_global and tuerschild_mqtt_*.c
+ *	tuerschild_conf_request enum for the different config requests (none, only config, full factory reset) the user can make, see config_requested
+ *	tuerschild_wifi_mode	type to communicate wifi mode to wifi component, see tuerschild_wifi_*.c
+ *	tuerschild_config		structure holding the system configuration,	 see tuerschild_conf.c
+ * 	early_init				call this before calling functions involving hardware
+ * 	config_requested		returns the type of config-request the made with the button
+ * 	conf_set*				set propertie of config structure see tuerschild_conf.c
+ *	init_empty_conf			init empty config structure see tuerschild_conf.c
+ *	set_empty_conf			delete all values  from config structure see tuerschild_conf.c
+ * 	read_conf_from_nvs		see tuerschild_storage_*.c
+ * 	store_configuration		see tuerschild_storage_*.c
+ * 	factory_settings		writes default config to flash, see tuerschild_esp32.c
+ * 	bring_wifi_up			see tuerschild_wifi_*.c
+ * 	hotspot_has_client		see tuerschild_wifi_*.c
+ * 	bring_mqtt_client_up	see tuerschild_mqtt_*.c
+ *	start_mqtt_receive		see tuerschild_mqtt_*.c
+ *	mqtt_recv_success		see tuerschild_mqtt_*.c
+ *	mqtt_recv_timeout		see tuerschild_mqtt_*.c
+ *	mqtt_error				see tuerschild_mqtt_*.c
+ *	start_recv_config		see tuerschild_httpd_*.c
+ *	stop_recv_config		see tuerschild_httpd_*.c
+ *	done_recv_conf			see tuerschild_httpd_*.c
+ *	print_received			prints received raw mqtt message 
+ *	yield					returns controll to taskmanager, see tuerschild_esp32.c
+ * 	enter_sleep				enter deep sleep for 15 minutes
+ *	tuerschild_delay_ms		pause task
+ *	init_reset_btn			init input pin for conig button
+ *	reset_btn_pressed		true if config button is pressed
+ *	process_and_show		parses received mqtt message and shows it on display, see tuerschild_eink_*.c and *_eink_driver*
+ *	time_from_sntp			syncs system clock 
+*	reboot					reboot
+ *********************************/
 #include "tuerschild_esp32.h"
+#include <stdint.h>
+
 
 typedef enum tuerschild_conf_request
 {
@@ -17,7 +51,6 @@ typedef enum tuerschild_wifi_mode
 	TUERSCHILD_WIFI_HYBRID
 } tuerschild_wifi_mode_t;
 
-#include <stdint.h>
 typedef struct tuerschild_config
 {
 	//sta
@@ -40,8 +73,8 @@ typedef struct tuerschild_config
 
 extern int topic_in_len;
 extern int data_in_len;
-extern char topic_in_buf[TOPIC_IN_MAX_LEN];
-extern char data_in_buf[DATA_IN_MAX_LEN];
+extern char topic_in_buf[TOPIC_IN_MAX_LEN+1];
+extern char data_in_buf[DATA_IN_MAX_LEN+1];
 
 int early_init();
 tuerschild_conf_request_t config_requested();
@@ -73,10 +106,9 @@ int mqtt_recv_timeout();
 int mqtt_error();
 int start_recv_config(tuerschild_config_t* config);
 int stop_recv_config();
-int display();
+int print_received();
 void yield();
 void enter_sleep();
-int process();
 int done_recv_conf();
 void tuerschild_delay_ms(int x);
 

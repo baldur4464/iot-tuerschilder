@@ -1,3 +1,15 @@
+/*********************************************************
+ * component running the http server for the configuration interface
+ *  get_handler         called when the user calls the /conf site, sends the site in chunks, to be able to insert  current configuration values as prefilled values in the forms
+ *  post_handler        searches the post request for the known fields, parses the URL encoding, and if the password and password confirm fields match writes the
+ *                      new configuration in the structure, the server was called with, responds accoringly with siple text
+ *  start_recv_config   starts the server
+ *  stop_recv_config    stops the server
+ *  done_recv_conf      returns true, if a configuration was received and saved in the structure, the server was called with
+ *  parse_url_encoded   helper function to extract URL-encoded values
+ *  get_string_in_post  helper function to locate the value of key in a post-request
+ ********************************************************/
+
 #include "tuerschild.h"
 
 #include <string.h>
@@ -13,12 +25,12 @@
 
 static const char* tag = "tuerschild_httpd_esp32";
 
-#define CONF_RECEIVED_BIT (1<<20)
+#define CONF_RECEIVED_BIT (1<<20)   //internal event configuration received
 
-typedef struct post_context
+typedef struct post_context         //structure to keep state between postrequests of a post session
 {
-    char* content;
-    int put;
+    char* content;                  //where are we accumulating the data?
+    int put;                        //how many bytes already written?
 } post_context_t;
 
 static EventGroupHandle_t httpd_events = NULL;
@@ -36,6 +48,7 @@ static esp_err_t post_handler(httpd_req_t* request);
 static int parse_url_encoded(char* str);
 static char* get_string_in_post(char* post, const char* key, int* len);
 
+//fragmented site with forms, allows easy insertion of prefilled values
 
 static const char page_before_ssid[] = 
         "<html><body>"
@@ -105,48 +118,48 @@ char buf[100];
 static esp_err_t get_handler(httpd_req_t* request)
 {   
     
-    tuerschild_config_t* old_conf = request->user_ctx;
+    tuerschild_config_t* old_conf = request->user_ctx; //old configuration ist set as parameter, when registering the handler
     TUERSCHILD_LOGI(tag, "server got \"GET\" request");
     //httpd_resp_send(request, request->user_ctx, HTTPD_RESP_USE_STRLEN);
     httpd_resp_sendstr_chunk(request, page_before_ssid);
-    if(old_conf->ssid && strlen(old_conf->ssid)) {
+    if(old_conf->ssid && strlen(old_conf->ssid)) {      //if possible, prefil ssid
         httpd_resp_sendstr_chunk(request, old_conf->ssid);
     }
 
     httpd_resp_sendstr_chunk(request, page_before_topic);
-    if(old_conf->topic && strlen(old_conf->topic)) {
+    if(old_conf->topic && strlen(old_conf->topic)) {    //if possible, prefill topic
         httpd_resp_sendstr_chunk(request, old_conf->topic);
     }
 
     httpd_resp_sendstr_chunk(request, page_before_port);
-    if(old_conf->port) {
+    if(old_conf->port) {                                 //if possible, prefil port
         snprintf(buf, 99, "%d", old_conf->port);
         httpd_resp_sendstr_chunk(request, buf);
     }
 
     httpd_resp_sendstr_chunk(request, page_before_broker);
-    if(old_conf->broker && strlen(old_conf->broker)) {
+    if(old_conf->broker && strlen(old_conf->broker)) {     //if possible, prefil broker     
         httpd_resp_sendstr_chunk(request, old_conf->broker);
     }
 
     httpd_resp_sendstr_chunk(request, page_before_ap_ssid);
-    if(old_conf->ap_ssid && strlen(old_conf->ap_ssid)) {
+    if(old_conf->ap_ssid && strlen(old_conf->ap_ssid)) {        //if possible, prefil ap ssid
         httpd_resp_sendstr_chunk(request, old_conf->ap_ssid);
     }
 
     httpd_resp_sendstr_chunk(request, page_before_ap_chan);
-    if(old_conf->ap_channel) {
+    if(old_conf->ap_channel) {                                      //if possible, prefil  AP_Channel
         snprintf(buf, 99, "%d", old_conf->ap_channel);
         httpd_resp_sendstr_chunk(request, buf);
     }
     httpd_resp_sendstr_chunk(request, page_before_ntp);
-    if(old_conf->ntp_server && strlen(old_conf->ntp_server)) {
+    if(old_conf->ntp_server && strlen(old_conf->ntp_server)) {      //if possible, prefil ntp server
         httpd_resp_sendstr_chunk(request, old_conf->ntp_server);
     }
 
     httpd_resp_sendstr_chunk(request, page_end);
     
-    httpd_resp_send_chunk(request, NULL, 0);
+    httpd_resp_send_chunk(request, NULL, 0);                //need this to indicate that the last chunk was sent
     
     
     return ESP_OK;
@@ -159,31 +172,31 @@ static esp_err_t post_handler(httpd_req_t* request)
 
     TUERSCHILD_LOGI(tag, "server got \"POST\" request");
 
-    if(!request->sess_ctx) {
+    if(!request->sess_ctx) {            //is nwe session?
         TUERSCHILD_LOGI(tag, "neue post session");
-        ctx = malloc(sizeof(post_context_t));
-        request->sess_ctx = ctx;
-        ctx->content = malloc(request->content_len + 1 );
-        ctx->put = 0;
+        ctx = malloc(sizeof(post_context_t));   //allocate session context
+        request->sess_ctx = ctx;                //following calls of this handler in this ssession will have this context 
+        ctx->content = malloc(request->content_len + 1 );   //allocate accumulation buffer
+        ctx->put = 0;       //no bytes written yet
     } else {
-        ctx = request->sess_ctx;
+        ctx = request->sess_ctx;        //not the beinning of new session 
     }
     ret = httpd_req_recv(request, ctx->content + ctx->put, request->content_len);
-    if(ret <= 0) {
-        free(ctx->content);
-        free(ctx);
-        request->sess_ctx = NULL;
+    if(ret <= 0) {  //last chunk was already received last time, session ends
+        free(ctx->content); //free accumulation buffer
+        free(ctx);  //free session context
+        request->sess_ctx = NULL;   //indicate, that the session is over
         return ESP_FAIL;
     }
-    ctx->put += ret;
-    if(ret == request->content_len) {
-        #warning reponse muell
-        #warning printing config
+    ctx->put += ret;    //how many will be accumulated at the end fo this handler?
+    if(ret == request->content_len) {   //this call will have the last chunk
+        
         TUERSCHILD_LOGI(tag, "post session vorbei");
-        ctx->content[ctx->put++] = 0;
+        ctx->content[ctx->put++] = 0;   //null terminate received data
         TUERSCHILD_LOGI(tag, "%.*s", ctx->put, ctx->content);
         
-        
+        //located the values in the send data
+
         int ssid_len;
         char* ssid = get_string_in_post(ctx->content, "SSID=", &ssid_len);
         
@@ -219,6 +232,8 @@ static esp_err_t post_handler(httpd_req_t* request)
         int ntp_len;
         char* ntp = get_string_in_post(ctx->content, "ntp=", &ntp_len);
 
+        //mark the the end of each encoded value, because helper cuntion expects it
+
         ssid[ssid_len] = 0;
         pass[pass_len] = 0;
         pass_conf[pass_conf_len] = 0;
@@ -231,6 +246,7 @@ static esp_err_t post_handler(httpd_req_t* request)
         ap_chan_str[ap_chan_len] = 0;
         ntp[ntp_len] = 0;
         
+        //decode values
         parse_url_encoded(ssid);
         parse_url_encoded(pass);
         parse_url_encoded(pass_conf);
@@ -246,16 +262,16 @@ static esp_err_t post_handler(httpd_req_t* request)
         //TUERSCHILD_LOGW(tag, "conf: %s %s %s %s %s", ssid, pass, broker, topic, port_str);
         //TUERSCHILD_LOGW(tag, "field lengths: %d, %d, %d, %d, %d", ssid_len, pass_len, broker_len, topic_len, port_len);
 
-        if( (strcmp(pass_conf, pass) == 0) && (strcmp(ap_pass_conf, ap_pass)  == 0) ) {
+        
+        if( (strcmp(pass_conf, pass) == 0) && (strcmp(ap_pass_conf, ap_pass)  == 0) ) { //if passwords and confirmation fields match
             TUERSCHILD_LOGW(tag, "saving new config");
             
             tuerschild_config_t* conf = request->user_ctx;
-            //tuerschild_config_t new_conf = {.broker = broker, .password = pass, .port = atoi(port), .ssid = ssid, .topic = topic};
-            //*conf = new_conf;
-            
+
             if(pass_len && pass_conf_len && ap_pass_len && ap_pass_conf_len && ntp_len){
-              conf_set(conf, ssid, pass, broker, atoi(port_str), topic, ap_ssid, ap_pass, atoi(ap_chan_str), ntp);  
+              conf_set(conf, ssid, pass, broker, atoi(port_str), topic, ap_ssid, ap_pass, atoi(ap_chan_str), ntp);      //if  all fiields are set, and passwords are changed write in one call
             } else {
+                //passwords may be unchanged
                 conf_set_ssid(conf, ssid);
                 conf_set_broker(conf, broker);
                 conf_set_port(conf, atoi(port_str));
@@ -263,6 +279,7 @@ static esp_err_t post_handler(httpd_req_t* request)
                 conf_set_ap_ssid(conf, ap_ssid);
                 conf_set_ap_chan(conf, atoi(ap_chan_str));
                 conf_set_ntp(conf, ntp);
+                //only udpate passwords if user actually change the fields
                 if(pass_len && pass_conf) {
                     conf_set_pass(conf, pass);
                 }
@@ -270,6 +287,7 @@ static esp_err_t post_handler(httpd_req_t* request)
                     conf_set_ap_pass(conf, ap_pass);
                 }
             }
+            //response to user
             httpd_resp_send(request, "saved config", HTTPD_RESP_USE_STRLEN);
             xEventGroupSetBits(httpd_events, CONF_RECEIVED_BIT);
         } else {
@@ -280,7 +298,7 @@ static esp_err_t post_handler(httpd_req_t* request)
 
         free(ctx->content);
         free(ctx);
-        request->sess_ctx = NULL;
+        request->sess_ctx = NULL;//otherwise the callee will try to free the context
     }
     
     return ESP_OK;
@@ -298,7 +316,7 @@ int start_recv_config(tuerschild_config_t *conf)
     }
     TUERSCHILD_LOGI(tag, "server has port: %d", server_conf.server_port);
 
-    conf_get.user_ctx = conf;
+    conf_get.user_ctx = conf;   //get handler will have this as parameter
 
     error = httpd_register_uri_handler(server, &conf_get);
     if(error != ESP_OK) {
@@ -314,7 +332,7 @@ int start_recv_config(tuerschild_config_t *conf)
         return 0;
     }
 
-    conf_post.user_ctx = conf;
+    conf_post.user_ctx = conf;  //post handler will ahve this as parameter
     
     error = httpd_register_uri_handler(server, &conf_post);
     if(error != ESP_OK) {
@@ -349,20 +367,21 @@ int parse_url_encoded(char* str)
     buf[2] = 0;
     while(*(get)) {
         switch(*get) {
-        case '%' :
+        case '%' :  //hex encoded char
            //*(put++) = ((tolower(*(get+1))-'0') << 4) | (tolower(*(get+2))-'0');
             buf[0] = *(++get);
             buf[1] = *(++get);
             
             get++;
-            *(put++) = strtol(buf, NULL, 16);
+            *(put++) = strtol(buf, NULL, 16);   //decode hex
             
             break;
-        case '+':
+        case '+':   //space place holder
             *(put++) = ' ';
             get++;
             break;
         default:
+            //simple character
             *(put++) = *(get++);
         }
         
@@ -371,12 +390,14 @@ int parse_url_encoded(char* str)
     return put - str;
 }
 
+//returns pointer to first character behind the key string, und writes length of value string to given varaible
+//key string must include '=' character
 char* get_string_in_post(char* post, const char* key_str, int* len)
 {
     
-    char* val_str = strstr(post, key_str) + strlen(key_str);
-    char* end = strchr(val_str, '&');
-    if(!end) {
+    char* val_str = strstr(post, key_str) + strlen(key_str);    //get first character behind key string
+    char* end = strchr(val_str, '&');//marks beginning of next keystring
+    if(!end) {  //if no next keystring is present, end of post string also marks end of value string
         *len = strlen(val_str);
     } else 
     *len = end - val_str;

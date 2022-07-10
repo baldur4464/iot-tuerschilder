@@ -1,3 +1,12 @@
+/*********************************************
+ * component for controlling the wifi 
+ * _common_wifi_init	helper function for initialization common to client and hotspot
+ * event_handler_wifi	reacts to wifi events, checks connection status
+ * event_handler_ip		reacts to ip events, confirms ip connection
+ * bring_wifi_up		activates the given wifi mode, additionally to the the mode already running, iof one is already running
+ * hotspot_has_client	returns true, of the hotspot hast a station connected to it
+ *********************************************/
+
 #include "tuerschild.h"
 #include <stdio.h>
 #include <string.h>
@@ -14,7 +23,7 @@
 #include "esp_err.h"
 #include "nvs_flash.h"
 
-
+//internal events
 #define CONNECTED_BIT (1<<12)
 #define HAS_CLIENT_BIT (1<<13)
 
@@ -38,10 +47,11 @@ static int _common_wifi_init(wifi_init_config_t* wifi_init_cfg, EventGroupHandle
 {
 	esp_err_t error;
 
-	error = esp_wifi_stop();
+	error = esp_wifi_stop();	//stop wifi if runnign to (re)configure
 
+	//lazy initialization of eventgroup
 	if(!*wifi_events) {
-		*wifi_events = xEventGroupCreate();
+		*wifi_events = xEventGroupCreate();	
 	}
 	if(!*wifi_events) {
 		TUERSCHILD_LOGE(tag, "failed at creating event_group");
@@ -51,7 +61,7 @@ static int _common_wifi_init(wifi_init_config_t* wifi_init_cfg, EventGroupHandle
 	const wifi_init_config_t def_conf = WIFI_INIT_CONFIG_DEFAULT();
 	(*wifi_init_cfg) = def_conf;
 
-	
+	//lazy initialization of eventhandlers
 	if(!*handler_wifi) {
 		error = esp_event_handler_instance_register(
 			WIFI_EVENT,	ESP_EVENT_ANY_ID, event_handler_wifi, NULL,
@@ -201,7 +211,7 @@ int bring_wifi_up(tuerschild_wifi_mode_t mode, tuerschild_config_t* conf)
             .authmode = WIFI_AUTH_WPA_WPA2_PSK
         }
 	};
-
+	//get calues from systemconfig into wifi config
 	strcpy((char*)wifi_cfg_ap.ap.ssid, conf->ap_ssid);
 	strcpy((char*)wifi_cfg_ap.ap.password, conf->ap_password);
 	
@@ -214,17 +224,19 @@ int bring_wifi_up(tuerschild_wifi_mode_t mode, tuerschild_config_t* conf)
 
 
 
-	
+	//if not only accesspoint, we need our login credentials
 	if(mode == TUERSCHILD_WIFI_STATION || mode == TUERSCHILD_WIFI_HYBRID) {
 		strcpy((char*)wifi_cfg_sta.sta.ssid, conf->ssid);
 		strcpy((char*)wifi_cfg_sta.sta.password, conf->password);
 	}
 		
+	
 	if(!_common_wifi_init(&wifi_init_cfg, &wifi_events , event_handler_wifi, &handler_wifi, event_handler_ip, &handler_ip)) {
 		return 0;
 	}
 
 	TUERSCHILD_LOGI(tag, "done common wifi init");
+	//lazy creation of network interfaces
 	//~ does not return on failure
 	//~ 'Creates default WIFI STA. In case of any init error this call aborts.'
 	if((!def_sta) && (mode == TUERSCHILD_WIFI_STATION || mode ==TUERSCHILD_WIFI_HYBRID)) {
@@ -236,6 +248,7 @@ int bring_wifi_up(tuerschild_wifi_mode_t mode, tuerschild_config_t* conf)
 
 	TUERSCHILD_LOGI(tag, "created interfaces");
 
+	//do once
 	if(!init_done) {
 		error = esp_wifi_init(&wifi_init_cfg);
 		//ESP_ERROR_CHECK(error);
@@ -254,6 +267,7 @@ int bring_wifi_up(tuerschild_wifi_mode_t mode, tuerschild_config_t* conf)
 		return 0;
 	}
 
+	//new mode is combination of given mode and old mode
 	if(old_mode == WIFI_MODE_APSTA || mode == TUERSCHILD_WIFI_HYBRID || (mode == TUERSCHILD_WIFI_AP && old_mode == WIFI_MODE_STA) || (mode == TUERSCHILD_WIFI_STATION && old_mode == WIFI_MODE_AP)) {
 		new_mode = WIFI_MODE_APSTA;
 	} else if(mode == TUERSCHILD_WIFI_AP) {
@@ -262,7 +276,7 @@ int bring_wifi_up(tuerschild_wifi_mode_t mode, tuerschild_config_t* conf)
 		new_mode = WIFI_MODE_STA;
 	};
 	TUERSCHILD_LOGI(tag, "new wifi mode is: %d", new_mode);
-	esp_wifi_stop();
+	esp_wifi_stop();	//stop to reconfigure	
 	switch(mode)
 	{
 		case TUERSCHILD_WIFI_AP:
@@ -284,7 +298,7 @@ int bring_wifi_up(tuerschild_wifi_mode_t mode, tuerschild_config_t* conf)
 		return 0;
 	}
 	
-
+	//set needed configs
 	if(mode == TUERSCHILD_WIFI_STATION || mode == TUERSCHILD_WIFI_HYBRID) {
 		error = esp_wifi_set_config(WIFI_IF_STA, &wifi_cfg_sta);
 		if(error != ESP_OK) {
@@ -299,7 +313,7 @@ int bring_wifi_up(tuerschild_wifi_mode_t mode, tuerschild_config_t* conf)
 			return 0;
 		}
 	}
-
+	//actually start wifi, then event handler will connect
 	error = esp_wifi_start();
 	if(error != ESP_OK) {
 		TUERSCHILD_LOGE(tag, "failed at starting wifi");
