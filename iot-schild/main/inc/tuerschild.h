@@ -36,7 +36,7 @@ typedef struct tuerschild_config
 } tuerschild_config_t;
 
 #define TOPIC_IN_MAX_LEN 128
-#define DATA_IN_MAX_LEN 1024
+#define DATA_IN_MAX_LEN 4096
 
 extern int topic_in_len;
 extern int data_in_len;
