@@ -13,8 +13,8 @@ void app_main(void)
 {
 	early_init();
 
-	const char* json = "{\"meeting1\":{ \"titel\":\"12345678901234567890123456789012345678901234567890123456789012345678901234567890 \", \"uhrzeit\":\"14:00-15:00\"}, \"meeting2\":{ \"titel\":\"Meeting 2 \", \"uhrzeit\":\"15:00-16:00\"}, \"systeminfo\":{ \"datum\":\"04.07.2022 \", \"updateUhrzeit\":\"15:42\"}, \"meeting3\":{ \"titel\":\"Meeting 3 \", \"uhrzeit\":\"17:00-18:00\"}, \"meeting4\":{ \"titel\":\"Meeting 4 \", \"uhrzeit\":\"18:00-19:00\"}, \"aktuellesMeeting\":{ \"titel\":\"12345678901234567890123456789 \", \"verantwortlicher\":\"1234567890123456789012345678901234567890\", \"uhrzeit\":\"13:00-14:00\"}}";
-	const char* topic = "123456789";
+	const char* json = "{\"meeting1\":{ \"titel\":\"Schreiben der Dokumentation \", \"uhrzeit\":\"16:00-17:00\"}, \"meeting2\":{ \"titel\":\"Ueberpruefung, ob alle Anforderungen erfuellt wurden \", \"uhrzeit\":\"17:00-18:00\"}, \"systeminfo\":{ \"datum\":\"09.07.2022 \", \"updateUhrzeit\":\"15:42\"}, \"meeting3\":{ \"titel\":\"Finale Fassung analysieren \", \"uhrzeit\":\"20:00-21:00\"}, \"meeting4\":{ \"titel\":\"Endbesprechung der Tuerschilddokumentation \", \"uhrzeit\":\"22:00-23:00\"}, \"aktuellesMeeting\":{ \"titel\":\"aktuellen Stand besprechen \", \"verantwortlicher\":\"ESP Gruppe IOTuerschild\", \"uhrzeit\":\"15:00-16:00\"}}";
+	const char* topic = "Raum 5";
 	
 	strcpy(topic_in_buf, topic);
 	strcpy(data_in_buf, json);
