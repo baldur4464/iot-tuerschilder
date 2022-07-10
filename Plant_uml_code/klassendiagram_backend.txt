@@ -5,6 +5,8 @@ class CalendarAPI{
   - TOKENS_DIRECTORY_PATH: String
   - SCOPES: List<String>
   - CREDENTIALS_FILE_PATH: String
+  - dotenv: Dotenv
+
 
   - getCredentials(NetHttpTransport): Credential
   + getEvents() : List<Event>
