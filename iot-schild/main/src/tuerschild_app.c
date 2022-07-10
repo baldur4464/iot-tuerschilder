@@ -76,18 +76,14 @@ void app_main(void)
 	TUERSCHILD_LOGI(tag, "****Internet of Tuerschild testbench****");
 	TEST_EXPECT(early_init());
 	
-	//test_config_request();
-	//test_config();
-	//test_storage();
+	test_config_request();
+	test_config();
+	test_storage();
 	
-	//test_wifi();
-	//test_config_interface();
-	//test_subscriber();
+	test_wifi();
+	test_config_interface();
+	test_subscriber();
 
-	
-	//tuerschild_config_t conf;
-	//init_empty_conf(&conf);
-	//read_conf_from_nvs(&conf);
 
 	
 	strcpy(topic_in_buf, topic);
@@ -241,7 +237,6 @@ void test_wifi()
 	//tuerschild_config_t conf;	
 	//init_empty_conf(&conf);
 
-	config_requested();
 
 	//TEST_EXPECT(read_conf_from_nvs(&conf));
 
