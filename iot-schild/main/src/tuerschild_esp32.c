@@ -139,7 +139,7 @@ int factory_settings()
 		.topic = "raum/5",
 
 		
-		.ap_ssid = "Tueschild Einrichtung",
+		.ap_ssid = "Tuerschild Einrichtung",
 		.ap_password = "01234567",
 		.ap_channel = 6,
 		.ntp_server = "pool.ntp.org"

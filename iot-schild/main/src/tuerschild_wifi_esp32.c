@@ -16,6 +16,7 @@
 
 
 #define CONNECTED_BIT (1<<12)
+#define HAS_CLIENT_BIT (1<<13)
 
 static const char* tag = "tuerschild_wifi_esp32";
 
@@ -84,29 +85,33 @@ static int _common_wifi_init(wifi_init_config_t* wifi_init_cfg, EventGroupHandle
 static void event_handler_wifi(void* arg, esp_event_base_t base, int32_t event_id, void* event_data) {
 	switch(event_id) {
 		case WIFI_EVENT_STA_START:
-			puts("station started");
+			TUERSCHILD_LOGI(tag, "station started");
 			esp_wifi_connect();
 			break;
 		case WIFI_EVENT_STA_DISCONNECTED:
-			puts("station disconnected, try reconnecting");
+			TUERSCHILD_LOGI(tag, "station disconnected, try reconnecting...");
 			esp_wifi_connect();
 			break;
 		case WIFI_EVENT_STA_CONNECTED:
-			puts("connection successfull");
+			TUERSCHILD_LOGI(tag, "station successfully connected");
 			break;
+		case WIFI_EVENT_AP_STACONNECTED:
+			TUERSCHILD_LOGI(tag, "client joined this hotspot");
+			xEventGroupSetBits(wifi_events, HAS_CLIENT_BIT);
+			break;
+
 		default:
-			printf("uncaught wifi event: %i\n", event_id);
+			TUERSCHILD_LOGI(tag, "uncaught wifi event: %i\n", event_id);
 		}
 }
 
 static void event_handler_ip(void* arg, esp_event_base_t base, int32_t event_id, void* event_data) {
 	switch(event_id) {
 		case IP_EVENT_STA_GOT_IP:
-			fflush(stdout);
 			xEventGroupSetBits(wifi_events, CONNECTED_BIT);
 			break;
 		default: 
-			printf("uncaught ip event: %i\n", event_id);
+			TUERSCHILD_LOGI(tag, "uncaught ip event: %i\n", event_id);
 	}
 }
 
@@ -192,7 +197,7 @@ int bring_wifi_up(tuerschild_wifi_mode_t mode, tuerschild_config_t* conf)
             .ssid_len = strlen(conf->ap_ssid),
             .channel = conf->ap_channel,
             //.password = conf->ap_password,
-            .max_connection = 1,
+            .max_connection = 10,
             .authmode = WIFI_AUTH_WPA_WPA2_PSK
         }
 	};
@@ -318,4 +323,9 @@ int bring_wifi_up(tuerschild_wifi_mode_t mode, tuerschild_config_t* conf)
 	}
 
 	return 1;
+}
+
+int hotspot_has_client()
+{
+	return !!(xEventGroupGetBits(wifi_events) & HAS_CLIENT_BIT);
 }

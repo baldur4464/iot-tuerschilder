@@ -65,6 +65,7 @@ int factory_settings();
 //int bring_wifi_station_up(tuerschild_config_t* conf);
 //int bring_wifi_hybrid_up(tuerschild_config_t* conf);
 int bring_wifi_up(tuerschild_wifi_mode_t mode, tuerschild_config_t* conf);
+int hotspot_has_client();
 int bring_mqtt_client_up(tuerschild_config_t* conf);
 int start_mqtt_receive(tuerschild_config_t* conf);
 int mqtt_recv_success();
