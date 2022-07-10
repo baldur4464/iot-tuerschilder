@@ -20,6 +20,7 @@ import de.thkoeln.iottuerschild.client.database.Raum;
 import de.thkoeln.iottuerschild.client.mqttnachricht.MQTTNachricht;
 import de.thkoeln.iottuerschild.client.mqttnachricht.Nachricht;
 import de.thkoeln.iottuerschild.client.publisher.Publisher;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.checkerframework.checker.units.qual.A;
 import org.json.JSONObject;
 
@@ -46,6 +47,9 @@ public class CalendarAPI implements Runnable{
     /** Directory to store authorization tokens for this application. */
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
 
+    /** Umgebungsvariablen in .env */
+    private Dotenv dotenv;
+
     /**
      * Global instance of the scopes required by this quickstart.
      * If modifying these scopes, delete your previously saved tokens/ folder.
@@ -53,6 +57,9 @@ public class CalendarAPI implements Runnable{
     private static final List<String> SCOPES = Collections.singletonList(CalendarScopes.CALENDAR_READONLY);
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
 
+    public CalendarAPI () {
+        dotenv = Dotenv.load();
+    }
 
     /**
      * Creates an authorized Credential object.
@@ -125,7 +132,7 @@ public class CalendarAPI implements Runnable{
              * Sortiert nach: Startdatum
              * Single Events: Wahr
              */
-            Events events = service.events().list("9r74t1cf6i83ibqpa443q7flh0@group.calendar.google.com")
+            Events events = service.events().list(dotenv.get("CALENDAR_API"))
                     .setTimeMin(now)
                     .setTimeMax(maxDate)
                     .setOrderBy("startTime")
@@ -491,7 +498,7 @@ public class CalendarAPI implements Runnable{
         while(true) {
             try {
                 sendMqttNachricht();
-                Thread.sleep(60000);
+                Thread.sleep(Integer.parseInt(dotenv.get("UPDATE_INTERVAL_IN_SEC"))*1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
